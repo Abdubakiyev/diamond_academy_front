@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://diamond-academy-back.onrender.com';
 
 export const api = axios.create({
   baseURL: API_URL,

@@ -3,7 +3,7 @@ import { RegisterDto, AuthResponse } from '../types/auth';
 
 // Axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:3000', // NestJS backend URL
+  baseURL: 'https://diamond-academy-back.onrender.com', // NestJS backend URL
   headers: { 'Content-Type': 'application/json' },
 });
 
