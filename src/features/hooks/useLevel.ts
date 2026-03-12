@@ -1,28 +1,26 @@
-import { useEffect, useState } from 'react';
-import { Level } from '../types/level';
-import { getLevels } from '../api/level';
+// src/features/hooks/useLevel.ts
+
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../api/api';
+import { Level } from '../types/index'; // ✅ index.ts dan import
 
 export const useLevels = () => {
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  return useQuery<Level[]>({
+    queryKey: ['levels'],
+    queryFn: async () => {
+      const { data } = await api.get<Level[]>('/level');
+      return data;
+    },
+  });
+};
 
-  useEffect(() => {
-    const fetchLevels = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getLevels();
-        setLevels(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch levels');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLevels();
-  }, []);
-
-  return { levels, loading, error };
+export const useLevel = (id: string) => {
+  return useQuery<Level>({
+    queryKey: ['level', id],
+    queryFn: async () => {
+      const { data } = await api.get<Level>(`/level/${id}`);
+      return data;
+    },
+    enabled: !!id,
+  });
 };

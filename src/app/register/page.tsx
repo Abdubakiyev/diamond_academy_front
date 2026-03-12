@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { register as registerUser } from '@/features/api/auth';
 import { RegisterDto } from '@/features/types/auth';
-import Header from '@/components/Header';
+import { useActiveAdvertisement } from '@/features/hooks/useAdvertisement';
 import Footer from '@/components/Footer';
-import { Eye, EyeOff, User, Phone, Loader2 } from 'lucide-react';
+import { User, Phone, Loader2 } from 'lucide-react';
 
 export default function Register() {
   const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterDto>();
+  const { data: activeAd, isLoading: adLoading } = useActiveAdvertisement();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -27,16 +28,12 @@ export default function Register() {
         ...(data.role ? { role: data.role } : {}),
       });
 
-      // ✅ Token va userId localStoragega saqlash
       if (res.accessToken) localStorage.setItem('access_token', res.accessToken);
       if (res.user?.id) localStorage.setItem('user_id', res.user.id);
 
-      // Muvaffaqiyatli ro'yxatdan o'tganlik haqida xabar
       setShowSuccess(true);
       
-      // 2 sekunddan so'ng redirect qilish
       setTimeout(() => {
-        // backend bergan redirect bo‘yicha
         router.push(res.redirect || '/dashboard');
       }, 2000);
 
@@ -51,43 +48,60 @@ export default function Register() {
     }
   };
 
+  // ✅ Video yoki rasm ekanligini aniqlash
+  const isVideo = (url: string) => {
+    return url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col">
-
       <main className="flex-1 flex justify-center items-center p-4 md:p-8">
         <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
-          {/* Left side - Illustration and info */}
-          <div className="hidden md:flex flex-col flex-1 max-w-md">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-xl">
-              <h1 className="text-3xl font-bold mb-6">Hisobingizni yarating</h1>
-              <p className="text-blue-100 mb-8 text-lg">
-                Bizning platformamizga qo'shiling va barcha imkoniyatlardan foydalaning. 
-                Ro'yxatdan o'tish bir necha daqiqa davom etadi.
-              </p>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-blue-500 p-2 rounded-lg">
-                    <User className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Oson ro'yxatdan o'tish</h3>
-                    <p className="text-blue-100">Faqat ismingiz va telefon raqamingizni kiriting</p>
+          
+          {/* Left side - Advertisement Only */}
+          {activeAd && (
+            <div className="hidden md:flex flex-col flex-1 max-w-md w-full">
+              {adLoading ? (
+                <div className="bg-white rounded-2xl p-8 shadow-xl">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-48 bg-gray-200 rounded-xl"></div>
+                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
                   </div>
                 </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="bg-blue-500 p-2 rounded-lg">
-                    <Phone className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Tezkor kirish</h3>
-                    <p className="text-blue-100">Bir marta ro'yxatdan o'ting, har doim platformamizda qoling</p>
-                  </div>
+              ) : (
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-xl">
+                  {activeAd.imageUrl && (
+                    <div className="w-full h-48 bg-white/10 rounded-xl overflow-hidden mb-6">
+                      {isVideo(activeAd.imageUrl) ? (
+                        // ✅ Video uchun
+                        <video
+                          src={`http://localhost:3000${activeAd.imageUrl}`}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                        />
+                      ) : (
+                        // ✅ Rasm uchun
+                        <img
+                          src={`http://localhost:3000${activeAd.imageUrl}`}
+                          alt={activeAd.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                  )}
+                  <h2 className="text-3xl font-bold mb-4">{activeAd.title}</h2>
+                  <p className="text-blue-100 text-lg leading-relaxed">
+                    {activeAd.description}
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Right side - Registration form */}
           <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
@@ -143,7 +157,7 @@ export default function Register() {
                         id="name"
                         type="text"
                         placeholder="Ismingizni kiriting"
-                        className={`w-full pl-10 pr-4 py-3 text-gray-700  border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.name ? 'border-red-300' : 'border-gray-300'}`}
+                        className={`w-full pl-10 pr-4 py-3 text-gray-700 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.name ? 'border-red-300' : 'border-gray-300'}`}
                       />
                     </div>
                     {errors.name && (
@@ -170,7 +184,7 @@ export default function Register() {
                         id="phone"
                         type="tel"
                         placeholder="+998901234567"
-                        className={`w-full pl-10 pr-4 py-3 text-gray-700  border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.phone ? 'border-red-300' : 'border-gray-300'}`}
+                        className={`w-full pl-10 pr-4 py-3 text-gray-700 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.phone ? 'border-red-300' : 'border-gray-300'}`}
                       />
                     </div>
                     {errors.phone && (

@@ -5,6 +5,7 @@ import api from '@/features/api/auth';
 import { User } from '@/features/types/user';
 import { TestResult } from '@/features/types/test-result';
 import AdminLayout from '@/components/AdminLayout';
+import AccessCodeNotification from '@/components/AccessCodeNotification';
 
 export default function AdminHome() {
   const [users, setUsers] = useState<User[]>([]);
@@ -216,12 +217,17 @@ export default function AdminHome() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white ...">
+
       <AdminLayout/>
+      <div className='px-4 md:px-8 lg:px-12 pb-8 md:pb-12'>
       {/* Header */}
       <div className="mb-8 mt-5">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
         <p className="text-gray-600">Manage users and test results</p>
+      </div>
+      <div className="mb-8">
+          <AccessCodeNotification />
       </div>
 
       {/* Stats Cards */}
@@ -563,6 +569,7 @@ export default function AdminHome() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

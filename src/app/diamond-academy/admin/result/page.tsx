@@ -161,7 +161,7 @@ export default function AdminResults() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white p-8">
         <AdminLayout />
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="relative">
@@ -177,7 +177,7 @@ export default function AdminResults() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white">
       <AdminLayout />
 
       <main className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">

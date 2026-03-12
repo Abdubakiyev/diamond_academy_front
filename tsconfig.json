@@ -30,6 +30,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "src/app/diamond-academy/admin/attendance"  ],
   "exclude": ["node_modules"]
 }

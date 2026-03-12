@@ -19,7 +19,13 @@ export default function AdminHeader() {
   const menuItems = [
     { label: 'Home', path: '/diamond-academy/admin' },
     { label: 'Results', path: '/diamond-academy/admin/result' },
+    { label: 'Level', path: '/diamond-academy/admin/level' },
+    { label: 'Reklama', path: '/diamond-academy/admin/advertisement' },
     { label: 'Tests', path: '/diamond-academy/admin/test' },
+    { label: 'Davomat', path: '/diamond-academy/admin/attendance' },
+    { label: 'Tolov', path: '/diamond-academy/admin/payment' },
+    { label: 'student', path: '/diamond-academy/admin/students' },
+    { label: 'group', path: '/diamond-academy/admin/group' },
   ];
 
   return (
@@ -27,7 +33,7 @@ export default function AdminHeader() {
       <div className="max-w-7xl mx-auto px-6 h-16 md:h-16 lg:h-20 flex items-center justify-between">
 
         {/* Logo */}
-        <Link href="/diamond_academy/admin" className="flex items-center gap-2 cursor-pointer">
+        <Link href="/diamond-academy/admin" className="flex items-center gap-2 cursor-pointer">
           <Image
             src="/logo.png"
             alt="Logo"

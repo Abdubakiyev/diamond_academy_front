@@ -8,7 +8,7 @@ import { useLevels } from "@/features/hooks/useLevel";
 
 export default function Home() {
   const router = useRouter();
-  const { levels, loading, error } = useLevels();
+  const { data: levels = [], isLoading, error } = useLevels();
 
   // ✅ Token check (client-safe)
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function Home() {
         </div>
 
         {/* Loading State */}
-        {loading && (
+        {isLoading&& (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="relative">
               <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -63,7 +63,7 @@ export default function Home() {
               </svg>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Xatolik yuz berdi</h3>
-            <p className="text-gray-600 mb-6">{error}</p>
+            <p className="text-gray-600 mb-6">{error?.message}</p>
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md hover:shadow-lg"
@@ -74,7 +74,7 @@ export default function Home() {
         )}
 
         {/* Levels Grid */}
-        {!loading && !error && (
+        {!isLoading && !error && (
           <div>
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -195,7 +195,7 @@ export default function Home() {
         )}
 
         {/* Empty State */}
-        {!loading && !error && levels.length === 0 && (
+        {!isLoading && !error && levels.length === 0 && (
           <div className="max-w-lg mx-auto bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl p-10 text-center shadow-xl">
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
               <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
