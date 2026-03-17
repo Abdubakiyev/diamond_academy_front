@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/features/api/auth';
 import { useSearchParams } from 'next/navigation';
@@ -9,7 +9,7 @@ import Footer from '@/components/Footer';
 import { TestResult } from '@/features/types/test-result';
 import { Trophy, CheckCircle, XCircle, Home, Clock, Calendar, User, Award, TrendingUp, Target } from 'lucide-react';
 
-export default function ResultPage() {
+function ResultContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resultId = searchParams.get('resultId');
@@ -39,7 +39,6 @@ export default function ResultPage() {
 
         setResult(res.data);
         
-        // Calculate percentage
         if (res.data.correctCount !== undefined && res.data.wrongCount !== undefined) {
           const total = res.data.correctCount + res.data.wrongCount;
           const percentage = total > 0 ? Math.round((res.data.correctCount / total) * 100) : 0;
@@ -56,7 +55,6 @@ export default function ResultPage() {
     fetchResult();
   }, [resultId]);
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -76,7 +74,6 @@ export default function ResultPage() {
     );
   }
 
-  // Error/not found state
   if (!result) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -99,11 +96,9 @@ export default function ResultPage() {
     );
   }
 
-  // Calculate values
   const totalQuestions = result.correctCount + result.wrongCount;
   const percentage = totalQuestions > 0 ? Math.round((result.correctCount / totalQuestions) * 100) : 0;
   
-  // Determine result color and message based on percentage
   const getResultColor = () => {
     if (percentage >= 90) return 'from-emerald-500 to-green-600';
     if (percentage >= 75) return 'from-green-500 to-emerald-600';
@@ -130,7 +125,6 @@ export default function ResultPage() {
       <Header />
 
       <main className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-        {/* Hero Result Card */}
         <div className={`bg-gradient-to-r ${getResultColor()} rounded-2xl p-6 md:p-8 text-white shadow-xl mb-8`}>
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="mb-6 md:mb-0 md:mr-8">
@@ -157,7 +151,6 @@ export default function ResultPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Score Cards */}
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center mr-4">
@@ -232,7 +225,6 @@ export default function ResultPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* User Info Card */}
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
               <User className="w-5 h-5 mr-3 text-blue-600" />
@@ -292,11 +284,10 @@ export default function ResultPage() {
             </div>
           </div>
 
-          {/* Statistics Card */}
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
               <TrendingUp className="w-5 h-5 mr-3 text-blue-600" />
-              Statistik tahliil
+              Statistik tahlil
             </h2>
             
             <div className="space-y-6">
@@ -341,7 +332,7 @@ export default function ResultPage() {
 
               <div className="pt-4 border-t border-gray-200">
                 <div className="text-center">
-                  <div className={`inline-flex items-center px-4 py-2 rounded-full ${getResultColor().replace('from-', 'bg-gradient-to-r from-')} text-white font-medium`}>
+                  <div className={`inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r ${getResultColor()} text-white font-medium`}>
                     <Award className="w-4 h-4 mr-2" />
                     {getResultLevel()} daraja
                   </div>
@@ -354,7 +345,6 @@ export default function ResultPage() {
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
           <div className="flex flex-col sm:flex-row items-center justify-between">
             <div className="mb-4 sm:mb-0">
@@ -381,7 +371,6 @@ export default function ResultPage() {
           </div>
         </div>
 
-        {/* Performance Tips */}
         <div className="mt-6 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-6">
           <h3 className="font-bold text-gray-900 mb-4 flex items-center">
             <TrendingUp className="w-5 h-5 mr-2 text-emerald-600" />
@@ -421,5 +410,21 @@ export default function ResultPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Asosiy export — Suspense bilan wraplanganFailed
+export default function ResultPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="text-gray-600 text-lg font-medium">Yuklanmoqda...</p>
+        </div>
+      </div>
+    }>
+      <ResultContent />
+    </Suspense>
   );
 }
