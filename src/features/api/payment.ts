@@ -6,8 +6,8 @@ export const paymentApi = {
   // Barcha to'lovlar
   getAll: async (filter?: PaymentFilter): Promise<Payment[]> => {
     const params = new URLSearchParams();
-    if (filter?.student) params.append('student', filter.student);
-    if (filter?.group) params.append('group', filter.group);
+    if (filter?.studentId) params.append('student', filter.studentId);
+    if (filter?.groupId) params.append('group', filter.groupId);
     if (filter?.status) params.append('status', filter.status);
     if (filter?.month) params.append('month', filter.month);
 
