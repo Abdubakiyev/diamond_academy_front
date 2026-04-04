@@ -76,41 +76,9 @@ const Footer = () => {
               sifatli bilim va ko'nikmalarni o'rgatishga qaratilgan. Bizning maqsadimiz 
               har bir talabaning potentsialini to'liq ro'yobga chiqarish.
             </p>
-            <div className="flex space-x-4">
-              <button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 
-                               rounded-lg hover:from-blue-700 hover:to-indigo-700 
-                               transition-all font-medium">
-                Bepul konsultatsiya
-              </button>
-              <button className="px-6 py-2 border border-blue-500 text-blue-400 
-                               rounded-lg hover:bg-blue-500/10 transition-all font-medium">
-                Kurslar
-              </button>
-            </div>
           </div>
 
           {/* Quick links */}
-          <div>
-            <h3 className="text-xl font-bold mb-6 flex items-center">
-              <span className="w-2 h-6 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full mr-3"></span>
-              Tezkor Havolalar
-            </h3>
-            <ul className="space-y-3">
-              {['Bosh Sahifa', 'Kurslar', 'Ustozlar', 'Natijalar', 'Testlar', 'Yangiliklar'].map((item) => (
-                <li key={item}>
-                  <a 
-                    href="/" 
-                    className="text-gray-300 hover:text-blue-400 hover:translate-x-2 
-                             transition-all duration-300 flex items-center group"
-                  >
-                    <span className="w-0 group-hover:w-2 h-0.5 bg-blue-400 mr-0 group-hover:mr-2 
-                                   transition-all duration-300"></span>
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
 
           {/* Contact info */}
           <div>
@@ -123,8 +91,8 @@ const Footer = () => {
               <li className="flex items-start">
                 <MapPin className="w-5 h-5 text-blue-400 mr-3 mt-1 flex-shrink-0" />
                 <span className="text-gray-300">
-                  Toshkent shahar, Yunusobod tumani,<br />
-                  Universitet ko'chasi, 15-uy
+                  Andijon viloyat, Oltinkol tumani,<br />
+                  Qoshtepasaroy,
                 </span>
               </li>
               <li className="flex items-center">
@@ -133,7 +101,7 @@ const Footer = () => {
                   href="tel:+998901234567" 
                   className="text-gray-300 hover:text-green-400 transition-colors"
                 >
-                  +998 90 123 45 67
+                  +998 90 525 98 25
                 </a>
               </li>
               <li className="flex items-center">
