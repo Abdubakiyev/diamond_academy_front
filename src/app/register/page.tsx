@@ -36,7 +36,7 @@ export default function Register() {
       
       // Access check sahifasiga yo'naltirish
       setTimeout(() => {
-        router.push('/diamond-academy/access-check');
+        router.push('/access-check');
       }, 2000);
 
     } catch (err: any) {
