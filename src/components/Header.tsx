@@ -11,6 +11,7 @@ const Header = () => {
     // 🔥 localStorage tozalash
     localStorage.removeItem('user_id');
     localStorage.removeItem('access_token');
+    localStorage.removeItem('access_verified');
 
     // 🔁 register page ga o‘tish
     router.push('/register');

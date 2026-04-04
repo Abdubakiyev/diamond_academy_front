@@ -53,16 +53,17 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-12">
           {/* Company info */}
           <div className="lg:col-span-2">
-            <div className="flex items-center mb-6">
-            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
-                  <Image
-                    src="/logo.png"
-                    alt="Logo"
-                    width={32}
-                    height={32}
-                    className="object-cover"
-                  />
-                </div>
+            {/* ✅ To'g'rilangan: gap-3 qo'shildi, indent muammosi bartaraf etildi */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Logo"
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              </div>
               <div>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-300 to-indigo-200 
                              bg-clip-text text-transparent">
