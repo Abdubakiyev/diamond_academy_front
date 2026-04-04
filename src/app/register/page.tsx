@@ -31,12 +31,21 @@ export default function Register() {
       // Token'larni saqlash
       if (res.accessToken) localStorage.setItem('access_token', res.accessToken);
       if (res.user?.id) localStorage.setItem('user_id', res.user.id);
+      
+      // User role'ini saqlash
+      if (res.user?.role) localStorage.setItem('user_role', res.user.role);
 
       setShowSuccess(true);
       
-      // Access check sahifasiga yo'naltirish
+      // Role'ga qarab yo'naltirish
       setTimeout(() => {
-        router.push('/access-check');
+        if (res.user?.role === 'ADMIN') {
+          // Admin bo'lsa to'g'ridan-to'g'ri admin dashboard'ga
+          router.push('/diamond-academy/admin');
+        } else {
+          // User bo'lsa access-check sahifasiga
+          router.push('/access-check');
+        }
       }, 2000);
 
     } catch (err: any) {
@@ -121,7 +130,7 @@ export default function Register() {
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-700 mb-3">Muvaffaqiyatli ro'yxatdan o'tdingiz!</h3>
-                <p className="text-gray-500 mb-8">Endi kirish kodini tekshirish sahifasiga o'tilmoqda...</p>
+                <p className="text-gray-500 mb-8">Sizni tegishli sahifaga yo'naltiramiz...</p>
                 <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 mx-auto rounded-full"></div>
               </div>
             ) : (
