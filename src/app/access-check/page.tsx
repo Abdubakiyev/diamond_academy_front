@@ -18,7 +18,7 @@ export default function AccessCheckPage() {
     if (typeof window !== 'undefined') {
       const verified = sessionStorage.getItem('access_verified');
       if (verified === 'true') {
-        router.push('/diamond-academy');
+        router.push('/');
       }
     }
   }, [router]);
