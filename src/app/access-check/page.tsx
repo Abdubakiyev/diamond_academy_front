@@ -68,7 +68,7 @@ export default function AccessCheckPage() {
 
         // 2 soniyadan keyin yo'naltirish
         setTimeout(() => {
-          router.push('/diamond-academy');
+          router.push('/');
         }, 2000);
       }
     } catch (err: any) {
