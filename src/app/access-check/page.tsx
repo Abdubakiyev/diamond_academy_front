@@ -17,11 +17,35 @@ export default function AccessCheckPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const verified = sessionStorage.getItem('access_verified');
+      const userRole = localStorage.getItem('user_role');
+      
+      // Admin bo'lsa access check'dan o'tkazmaslik
+      if (userRole === 'ADMIN') {
+        router.push('/diamond-academy/admin');
+        return;
+      }
+      
       if (verified === 'true') {
-        router.push('/');
+        router.push('/diamond-academy');
       }
     }
   }, [router]);
+
+  // Sahifa yopilganda yoki refresh qilinganda tozalash
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // SessionStorage'ni tozalash (faqat tab yopilganda)
+      sessionStorage.removeItem('access_verified');
+      sessionStorage.removeItem('access_code');
+    };
+
+    // beforeunload event (tab yopilganda)
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,10 +93,10 @@ export default function AccessCheckPage() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-4 shadow-lg">
             <Lock className="text-white" size={40} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h1 className="text-3xl font-bold text-gray-700 mb-2">
             Diamond Academy
           </h1>
-          <p className="text-gray-600">Saytga kirish uchun kod kiriting</p>
+          <p className="text-gray-500">Saytga kirish uchun kod kiriting</p>
         </div>
 
         {/* Success Message */}
@@ -81,10 +105,10 @@ export default function AccessCheckPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
               <CheckCircle className="text-green-600" size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            <h2 className="text-2xl font-bold text-gray-700 mb-2">
               Tasdiqlandi!
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-500">
               Endi saytga kirishingiz mumkin...
             </p>
             <div className="mt-4">
@@ -97,7 +121,7 @@ export default function AccessCheckPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Code Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Kirish kodi (6 ta belgi)
                 </label>
                 <input
