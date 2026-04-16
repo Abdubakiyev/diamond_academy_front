@@ -6,6 +6,7 @@ import { User } from '@/features/types/user';
 import { TestResult } from '@/features/types/test-result';
 import AdminLayout from '@/components/AdminLayout';
 import AccessCodeNotification from '@/components/AccessCodeNotification';
+import AccessCodeToggle from '@/components/AccessCodeToggle';
 
 export default function AdminHome() {
   const [users, setUsers] = useState<User[]>([]);
@@ -217,92 +218,102 @@ export default function AdminHome() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white ...">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white">
 
-      <AdminLayout/>
-      <div className='px-4 md:px-8 lg:px-12 pb-8 md:pb-12'>
-      {/* Header */}
-      <div className="mb-8 mt-5">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage users and test results</p>
-      </div>
-      <div className="mb-8">
+      <AdminLayout />
+      <div className="px-4 md:px-8 lg:px-12 pb-8 md:pb-12">
+
+        {/* Header */}
+        <div className="mb-8 mt-5">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+          <p className="text-gray-600">Manage users and test results</p>
+        </div>
+
+        {/* Access Code Toggle + Notification */}
+        <div className="mb-4">
+          <AccessCodeToggle />
+        </div>
+        <div className="mb-8">
           <AccessCodeNotification />
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
-              <div className="text-blue-600 font-bold text-xl">👥</div>
-            </div>
-          </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Admins</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter(u => u.role === 'ADMIN').length}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center">
-              <div className="text-green-600 font-bold text-xl">👑</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Test Results</p>
-              <p className="text-2xl font-bold text-gray-900">{results.length}</p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
-              <div className="text-purple-600 font-bold text-xl">📊</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Avg Score</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {results.length > 0 
-                  ? Math.round(results.reduce((acc, r) => acc + (r.correctCount / (r.correctCount + r.wrongCount) * 100), 0) / results.length)
-                  : 0}%
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 flex items-center justify-center">
-              <div className="text-amber-600 font-bold text-xl">⭐</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Users Section */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
-            <h2 className="text-xl font-bold text-white">Users Management</h2>
-            <p className="text-blue-100 text-sm">Create, read, update, delete users</p>
-          </div>
-
-          {/* Form */}
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingUserId ? 'Edit User' : 'Add New User'}
-            </h3>
-            <div className="space-y-4">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between">
               <div>
+                <p className="text-gray-600 text-sm">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
+                <div className="text-blue-600 font-bold text-xl">👥</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Admins</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {users.filter(u => u.role === 'ADMIN').length}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center">
+                <div className="text-green-600 font-bold text-xl">👑</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Test Results</p>
+                <p className="text-2xl font-bold text-gray-900">{results.length}</p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
+                <div className="text-purple-600 font-bold text-xl">📊</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Avg Score</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {results.length > 0
+                    ? Math.round(
+                        results.reduce(
+                          (acc, r) =>
+                            acc + (r.correctCount / (r.correctCount + r.wrongCount)) * 100,
+                          0
+                        ) / results.length
+                      )
+                    : 0}%
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 flex items-center justify-center">
+                <div className="text-amber-600 font-bold text-xl">⭐</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+          {/* Users Section */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+              <h2 className="text-xl font-bold text-white">Users Management</h2>
+              <p className="text-blue-100 text-sm">Create, read, update, delete users</p>
+            </div>
+
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {editingUserId ? 'Edit User' : 'Add New User'}
+              </h3>
+              <div className="space-y-4">
                 <input
                   type="text"
                   placeholder="Name"
@@ -310,8 +321,6 @@ export default function AdminHome() {
                   onChange={e => setUserName(e.target.value)}
                   className="w-full px-4 py-3 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </div>
-              <div>
                 <input
                   type="text"
                   placeholder="Phone"
@@ -319,8 +328,6 @@ export default function AdminHome() {
                   onChange={e => setUserPhone(e.target.value)}
                   className="w-full px-4 py-3 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </div>
-              <div>
                 <select
                   value={userRole}
                   onChange={e => setUserRole(e.target.value as 'USER' | 'ADMIN')}
@@ -329,107 +336,101 @@ export default function AdminHome() {
                   <option value="USER">USER</option>
                   <option value="ADMIN">ADMIN</option>
                 </select>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={editingUserId ? handleUpdateUser : handleAddUser}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium"
-                >
-                  {editingUserId ? 'Update User' : 'Add User'}
-                </button>
-                {editingUserId && (
+                <div className="flex gap-3">
                   <button
-                    onClick={clearUserForm}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    onClick={editingUserId ? handleUpdateUser : handleAddUser}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium"
                   >
-                    Cancel
+                    {editingUserId ? 'Update User' : 'Add User'}
                   </button>
-                )}
+                  {editingUserId && (
+                    <button
+                      onClick={clearUserForm}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.map(u => (
-                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-3">
-                          <span className="text-blue-600 font-medium">{u.name.charAt(0)}</span>
-                        </div>
-                        <span className="font-medium text-gray-900">{u.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{u.phone}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                        u.role === 'ADMIN' 
-                          ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800' 
-                          : 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800'
-                      }`}>
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditUser(u)}
-                          className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all text-sm"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="px-3 py-1 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 transition-all text-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Empty State */}
-          {users.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <div className="text-gray-400 text-2xl">👤</div>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-600">Add your first user using the form above</p>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {users.map(u => (
+                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-3">
+                            <span className="text-blue-600 font-medium">{u.name.charAt(0)}</span>
+                          </div>
+                          <span className="font-medium text-gray-900">{u.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{u.phone}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                          u.role === 'ADMIN'
+                            ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800'
+                            : 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800'
+                        }`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditUser(u)}
+                            className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="px-3 py-1 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 transition-all text-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
 
-        {/* Test Results Section */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
-            <h2 className="text-xl font-bold text-white">Test Results Management</h2>
-            <p className="text-purple-100 text-sm">Manage test results and scores</p>
+            {users.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div className="text-gray-400 text-2xl">👤</div>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+                <p className="text-gray-600">Add your first user using the form above</p>
+              </div>
+            )}
           </div>
 
-          {/* Form */}
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingResultId ? 'Edit Test Result' : 'Add New Test Result'}
-            </h3>
-            <div className="space-y-4">
-              <div>
+          {/* Test Results Section */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
+              <h2 className="text-xl font-bold text-white">Test Results Management</h2>
+              <p className="text-purple-100 text-sm">Manage test results and scores</p>
+            </div>
+
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {editingResultId ? 'Edit Test Result' : 'Add New Test Result'}
+              </h3>
+              <div className="space-y-4">
                 <input
                   type="text"
                   placeholder="User ID"
@@ -437,8 +438,6 @@ export default function AdminHome() {
                   onChange={e => setResultUserId(e.target.value)}
                   className="w-full px-4 py-3 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </div>
-              <div>
                 <input
                   type="text"
                   placeholder="Level ID"
@@ -446,9 +445,7 @@ export default function AdminHome() {
                   onChange={e => setResultLevelId(e.target.value)}
                   className="w-full px-4 py-3 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="grid grid-cols-2 gap-4">
                   <input
                     type="number"
                     placeholder="Correct Count"
@@ -456,8 +453,6 @@ export default function AdminHome() {
                     onChange={e => setCorrectCount(Number(e.target.value))}
                     className="w-full px-4 py-3 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-                <div>
                   <input
                     type="number"
                     placeholder="Wrong Count"
@@ -466,110 +461,106 @@ export default function AdminHome() {
                     className="w-full px-4 py-3 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={editingResultId ? handleUpdateResult : handleAddResult}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium"
-                >
-                  {editingResultId ? 'Update Result' : 'Add Result'}
-                </button>
-                {editingResultId && (
+                <div className="flex gap-3">
                   <button
-                    onClick={clearResultForm}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    onClick={editingResultId ? handleUpdateResult : handleAddResult}
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium"
                   >
-                    Cancel
+                    {editingResultId ? 'Update Result' : 'Add Result'}
                   </button>
-                )}
+                  {editingResultId && (
+                    <button
+                      onClick={clearResultForm}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {results.map(r => {
-                  const total = r.correctCount + r.wrongCount;
-                  const percentage = total > 0 ? Math.round((r.correctCount / total) * 100) : 0;
-                  
-                  return (
-                    <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-3">
-                            <span className="text-blue-600 font-medium">
-                              {r.user?.name?.charAt(0) || '?'}
-                            </span>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {results.map(r => {
+                    const total = r.correctCount + r.wrongCount;
+                    const percentage = total > 0 ? Math.round((r.correctCount / total) * 100) : 0;
+
+                    return (
+                      <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-3">
+                              <span className="text-blue-600 font-medium">
+                                {r.user?.name?.charAt(0) || '?'}
+                              </span>
+                            </div>
+                            <span className="font-medium text-gray-900">{r.user?.name ?? 'Unknown'}</span>
                           </div>
-                          <span className="font-medium text-gray-900">{r.user?.name ?? 'Unknown'}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">{r.level?.type ?? 'Unknown'}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
+                        </td>
+                        <td className="px-6 py-4 text-gray-600">{r.level?.type ?? 'Unknown'}</td>
+                        <td className="px-6 py-4">
                           <div className="flex-1">
                             <div className="flex justify-between text-sm mb-1">
                               <span className="text-green-600">{r.correctCount} correct</span>
                               <span className="text-gray-600">{percentage}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
+                              <div
                                 className="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-1000"
                                 style={{ width: `${percentage}%` }}
-                              ></div>
+                              />
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {new Date(r.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditResult(r)}
-                            className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all text-sm"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteResult(r.id)}
-                            className="px-3 py-1 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 transition-all text-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-6 py-4 text-gray-600">
+                          {new Date(r.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditResult(r)}
+                              className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteResult(r.id)}
+                              className="px-3 py-1 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 transition-all text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {results.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div className="text-gray-400 text-2xl">📊</div>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No test results found</h3>
+                <p className="text-gray-600">Add your first test result using the form above</p>
+              </div>
+            )}
           </div>
 
-          {/* Empty State */}
-          {results.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <div className="text-gray-400 text-2xl">📊</div>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No test results found</h3>
-              <p className="text-gray-600">Add your first test result using the form above</p>
-            </div>
-          )}
         </div>
-      </div>
       </div>
     </div>
   );

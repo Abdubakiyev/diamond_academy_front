@@ -63,7 +63,7 @@ export default function GroupsPage() {
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-blue-100"
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <Plus className="w-4 h-4" />
             Guruh qo'shish
@@ -134,7 +134,7 @@ export default function GroupsPage() {
                         <span className={`w-1.5 h-1.5 rounded-full ${group.isActive ? 'bg-emerald-400' : 'bg-slate-300'}`} />
                         {group.isActive ? 'Faol' : 'Nofaol'}
                       </span>
-                      <button onClick={() => setEditingGroup(group)} className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">
+                      <button onClick={() => setEditingGroup(group)} className="w-full px-4 py-2 border border-slate-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         Tahrirlash <ChevronRight className="w-3 h-3" />
                       </button>
                     </div>

@@ -13,6 +13,16 @@ export default function AccessCheckPage() {
 
   const checkMutation = useCheckAccessCode();
 
+  // Birinchi useEffect DAN OLDIN qo'shing
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    const enabled = localStorage.getItem('access_code_enabled');
+    if (enabled === 'false') {
+      router.push('/');
+    }
+  }
+}, [router]);
+
   // Agar avvaldan tasdiqlangan bo'lsa, tekshirish
   useEffect(() => {
     if (typeof window !== 'undefined') {

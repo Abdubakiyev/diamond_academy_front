@@ -221,7 +221,7 @@ export default function LevelPage() {
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ type: e.target.value as LevelType })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                     required
                   >
                     <option value={LevelType.BEGINNER}>Boshlang'ich (BEGINNER)</option>
