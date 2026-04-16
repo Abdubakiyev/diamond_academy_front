@@ -3,9 +3,19 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { LogOut, Home, User, Bell, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const Header = () => {
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+  const storedUser = localStorage.getItem('user');
+
+  if (storedUser) {
+    setUser(JSON.parse(storedUser));
+  }
+}, []);
 
   const handleLogout = () => {
     // 🔥 localStorage tozalash
@@ -92,11 +102,16 @@ const Header = () => {
             {/* User profile */}
             <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center text-sm font-bold">
-                A
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
+              
               <div className="flex flex-col">
-                <span className="text-sm font-medium">Abdulloh</span>
-                <span className="text-xs text-blue-100 opacity-80">Admin</span>
+                <span className="text-sm font-medium">
+                  {user?.name || 'User'}
+                </span>
+                <span className="text-xs text-blue-100 opacity-80">
+                  {user?.role || 'Student'}
+                </span>
               </div>
             </div>
 

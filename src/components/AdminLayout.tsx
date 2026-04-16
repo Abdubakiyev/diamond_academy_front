@@ -23,7 +23,6 @@ export default function AdminHeader() {
     { label: 'Reklama', path: '/diamond-academy/admin/advertisement' },
     { label: 'Tests', path: '/diamond-academy/admin/test' },
     { label: 'Davomat', path: '/diamond-academy/admin/attendance' },
-    { label: 'Tolov', path: '/diamond-academy/admin/payment' },
     { label: 'student', path: '/diamond-academy/admin/students' },
     { label: 'group', path: '/diamond-academy/admin/group' },
   ];
