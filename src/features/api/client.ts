@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 // Base URL - environment variable yoki default
-const BASE_URL = 'https://diamond-academy.onrender.com';
+const BASE_URL = 'https://diamond-academy-1lbv.onrender.com';
 
 // Axios instance yaratish
 export const apiClient: AxiosInstance = axios.create({

@@ -37,7 +37,7 @@ export default function AdvertisementsPage() {
         description: ad.description,
         isActive: ad.isActive,
       });
-      const url = ad.imageUrl ? `https://diamond-academy.onrender.com${ad.imageUrl}` : null;
+      const url = ad.imageUrl ? `https://diamond-academy-1lbv.onrender.com${ad.imageUrl}` : null;
       setPreviewUrl(url);
       setIsPreviewVideo(url ? isVideo(url) : false);
     } else {
@@ -197,7 +197,7 @@ export default function AdvertisementsPage() {
                     <div className="w-full md:w-48 h-48 bg-white rounded-lg overflow-hidden flex-shrink-0">
                       {isVideo(activeAd.imageUrl) ? (
                         <video
-                          src={`https://diamond-academy.onrender.com${activeAd.imageUrl}`}
+                          src={`https://diamond-academy-1lbv.onrender.com${activeAd.imageUrl}`}
                           className="w-full h-full object-cover"
                           autoPlay
                           loop
@@ -206,7 +206,7 @@ export default function AdvertisementsPage() {
                         />
                       ) : (
                         <img
-                          src={`https://diamond-academy.onrender.com${activeAd.imageUrl}`}
+                          src={`https://diamond-academy-1lbv.onrender.com${activeAd.imageUrl}`}
                           alt={activeAd.title}
                           className="w-full h-full object-cover"
                         />
@@ -265,7 +265,7 @@ export default function AdvertisementsPage() {
                       <div className="w-full h-48 bg-gray-100 rounded-t-xl overflow-hidden">
                         {isVideo(ad.imageUrl) ? (
                           <video
-                            src={`https://diamond-academy.onrender.com${ad.imageUrl}`}
+                            src={`https://diamond-academy-1lbv.onrender.com${ad.imageUrl}`}
                             className="w-full h-full object-cover"
                             autoPlay
                             loop
@@ -274,7 +274,7 @@ export default function AdvertisementsPage() {
                           />
                         ) : (
                           <img
-                            src={`https://diamond-academy.onrender.com${ad.imageUrl}`}
+                            src={`https://diamond-academy-1lbv.onrender.com${ad.imageUrl}`}
                             alt={ad.title}
                             className="w-full h-full object-cover"
                           />

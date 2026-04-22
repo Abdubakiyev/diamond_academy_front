@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { Advertisement, CreateAdvertisementDto, UpdateAdvertisementDto } from '../types/advertisement';
 
-const BASE_URL = 'https://diamond-academy.onrender.com/advertisements';
+const BASE_URL = 'https://diamond-academy-1lbv.onrender.com/advertisements';
 
 const getToken = (): string => {
   const token = localStorage.getItem('access_token');
