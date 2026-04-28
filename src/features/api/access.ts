@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { AccessCode, AccessCodeResponse, CheckAccessDto, CheckAccessResponse } from '../types/access';
 
-const BASE_URL = 'https://diamond-academy-1lbv.onrender.com/access';
+const BASE_URL = 'https://diamond-academy-back-guqx.onrender.com/access';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {

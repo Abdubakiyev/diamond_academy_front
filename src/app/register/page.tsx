@@ -87,7 +87,7 @@ export default function Register() {
                     <div className="w-full h-48 bg-white/10 rounded-xl overflow-hidden mb-6">
                       {isVideo(activeAd.imageUrl) ? (
                         <video
-                          src={`https://diamond-academy-1lbv.onrender.com${activeAd.imageUrl}`}
+                          src={`https://diamond-academy-back-guqx.onrender.com${activeAd.imageUrl}`}
                           className="w-full h-full object-cover"
                           autoPlay
                           loop
@@ -96,7 +96,7 @@ export default function Register() {
                         />
                       ) : (
                         <img
-                          src={`https://diamond-academy-1lbv.onrender.com${activeAd.imageUrl}`}
+                          src={`https://diamond-academy-back-guqx.onrender.com${activeAd.imageUrl}`}
                           alt={activeAd.title}
                           className="w-full h-full object-cover"
                         />
