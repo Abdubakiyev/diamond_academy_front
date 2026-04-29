@@ -46,6 +46,12 @@ export default function CombinedPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [attendanceData, setAttendanceData] = useState<Record<string, boolean>>({});
 
+  // ─── Inline payment state (inside attendance tab) ─────────────
+  const [attPaymentPaidIds, setAttPaymentPaidIds] = useState<Set<string>>(new Set());
+  const [attPaymentAmount, setAttPaymentAmount] = useState<number>(0);
+  const [attPaymentMonth, setAttPaymentMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [isSavingPayments, setIsSavingPayments] = useState(false);
+
   const { data: attGroups } = useGroups(true);
   const { data: students, isLoading: attLoading } = useAttendanceByGroupAndDate(attGroupId, selectedDate);
   const createAttendance = useCreateAttendanceBulk();
@@ -139,6 +145,14 @@ export default function CombinedPage() {
     setAttendanceData((prev) => ({ ...prev, [studentId]: !prev[studentId] }));
   };
 
+  const toggleAttPayment = (studentId: string) => {
+    setAttPaymentPaidIds((prev) => {
+      const next = new Set(prev);
+      next.has(studentId) ? next.delete(studentId) : next.add(studentId);
+      return next;
+    });
+  };
+
   const handleSave = () => {
     if (!attGroupId) return;
     const attendances = students?.map((item) => ({
@@ -146,6 +160,30 @@ export default function CombinedPage() {
       present: attendanceData[item.student.id] ?? item.present,
     })) || [];
     createAttendance.mutate({ groupId: attGroupId, date: selectedDate, attendances });
+  };
+
+  const handleSavePayments = async () => {
+    if (!attGroupId || !attPaymentAmount || !attPaymentMonth || !students?.length) return;
+    setIsSavingPayments(true);
+    try {
+      const promises = students.map((item) =>
+        apiClient.post('/payment', {
+          studentId: item.student.id,
+          groupId: attGroupId,
+          amount: attPaymentAmount,
+          status: attPaymentPaidIds.has(item.student.id) ? PaymentStatus.PAID : PaymentStatus.PENDING,
+          month: new Date(attPaymentMonth + '-01'),
+          paidAt: attPaymentPaidIds.has(item.student.id) ? new Date() : undefined,
+        })
+      );
+      await Promise.all(promises);
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      setAttPaymentPaidIds(new Set());
+    } catch (error) {
+      console.error('Error saving payments:', error);
+    } finally {
+      setIsSavingPayments(false);
+    }
   };
 
   const presentCount = students?.filter(item => attendanceData[item.student.id] ?? item.present).length ?? 0;
@@ -356,8 +394,8 @@ export default function CombinedPage() {
             <div className="max-w-4xl">
               {/* Header */}
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">Davomat</h2>
-                <p className="text-slate-500 text-sm">Talabalar davomatini belgilang va saqlang</p>
+                <h2 className="text-2xl font-bold text-slate-800">Davomat va To'lovlar</h2>
+                <p className="text-slate-500 text-sm">Davomat va to'lov holatini bir joyda belgilang</p>
               </div>
 
               {/* Filters */}
@@ -371,6 +409,7 @@ export default function CombinedPage() {
                         onChange={(e) => {
                           setAttGroupId(e.target.value);
                           setAttendanceData({});
+                          setAttPaymentPaidIds(new Set());
                         }}
                         className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       >
@@ -396,6 +435,36 @@ export default function CombinedPage() {
                     />
                   </div>
                 </div>
+
+                {/* Payment fields — shown when group is selected */}
+                {attGroupId && (
+                  <div className="flex flex-col sm:flex-row gap-4 mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                        To'lov summasi (so'm)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="500000"
+                        value={attPaymentAmount || ''}
+                        onChange={(e) => setAttPaymentAmount(Number(e.target.value))}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                    <div className="sm:w-52">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                        To'lov oyi
+                      </label>
+                      <input
+                        type="month"
+                        value={attPaymentMonth}
+                        onChange={(e) => setAttPaymentMonth(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Stats */}
@@ -431,7 +500,7 @@ export default function CombinedPage() {
                 </>
               )}
 
-              {/* Attendance List */}
+              {/* Attendance + Payment List */}
               {attGroupId ? (
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                   {attLoading ? (
@@ -441,21 +510,26 @@ export default function CombinedPage() {
                     </div>
                   ) : students && students.length > 0 ? (
                     <>
-                      <div className="grid grid-cols-[1fr_auto] px-6 py-3 bg-slate-50 border-b border-slate-100">
+                      {/* Table header */}
+                      <div className="grid grid-cols-[1fr_auto_auto] px-6 py-3 bg-slate-50 border-b border-slate-100 gap-6">
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Talaba</span>
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Holat</span>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Davomat</span>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">To'lov</span>
                       </div>
+
                       <div className="divide-y divide-slate-50">
                         {students.map((item) => {
                           const isPresent = attendanceData[item.student.id] ?? item.present;
+                          const isPaid = attPaymentPaidIds.has(item.student.id);
+
                           return (
                             <div
                               key={item.student.id}
-                              onClick={() => handleToggle(item.student.id)}
-                              className="flex items-center justify-between px-6 py-4 hover:bg-blue-50/40 cursor-pointer transition-all duration-150"
+                              className="grid grid-cols-[1fr_auto_auto] items-center px-6 py-4 hover:bg-slate-50/60 transition-all duration-150 gap-6"
                             >
+                              {/* Student info */}
                               <div className="flex items-center gap-4">
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all shrink-0 ${
                                   isPresent ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
                                 }`}>
                                   {item.student.name.charAt(0).toUpperCase()}
@@ -467,8 +541,13 @@ export default function CombinedPage() {
                                   )}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span className={`text-xs font-semibold px-3 py-1 rounded-full transition-all ${
+
+                              {/* Attendance toggle */}
+                              <div
+                                className="flex flex-col items-center gap-1 cursor-pointer"
+                                onClick={() => handleToggle(item.student.id)}
+                              >
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-all whitespace-nowrap ${
                                   isPresent ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-400'
                                 }`}>
                                   {isPresent ? 'Keldi' : 'Kelmadi'}
@@ -481,33 +560,78 @@ export default function CombinedPage() {
                                   }`} />
                                 </div>
                               </div>
+
+                              {/* Payment toggle */}
+                              <div
+                                className="flex flex-col items-center gap-1 cursor-pointer"
+                                onClick={() => toggleAttPayment(item.student.id)}
+                              >
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-all whitespace-nowrap ${
+                                  isPaid ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'
+                                }`}>
+                                  {isPaid ? "To'landi" : 'Kutilmoqda'}
+                                </span>
+                                <div className={`relative w-11 h-6 rounded-full transition-all duration-200 ${
+                                  isPaid ? 'bg-green-500' : 'bg-slate-200'
+                                }`}>
+                                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${
+                                    isPaid ? 'left-6' : 'left-1'
+                                  }`} />
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
                       </div>
-                      <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                        <p className="text-xs text-slate-400">
-                          {presentCount} / {totalCount} talaba belgilangan
-                        </p>
-                        <button
-                          onClick={handleSave}
-                          disabled={createAttendance.isPending}
-                          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-sm font-semibold text-white rounded-xl transition-all duration-200 shadow-md shadow-blue-100"
-                        >
-                          {createAttendance.isPending ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                              Saqlanmoqda...
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Saqlash
-                            </>
-                          )}
-                        </button>
+
+                      {/* Footer with summary and save buttons */}
+                      <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex gap-4 text-xs text-slate-500">
+                            <span>👤 {presentCount}/{totalCount} keldi</span>
+                            <span>💰 {attPaymentPaidIds.size}/{totalCount} to'ladi</span>
+                          </div>
+                          <div className="flex gap-3">
+                            {/* Save attendance */}
+                            <button
+                              onClick={handleSave}
+                              disabled={createAttendance.isPending}
+                              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-sm font-semibold text-white rounded-xl transition-all duration-200 shadow-md shadow-blue-100"
+                            >
+                              {createAttendance.isPending ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                  Saqlanmoqda...
+                                </>
+                              ) : (
+                                <>
+                                  <CalendarCheck size={16} />
+                                  Davomat saqlash
+                                </>
+                              )}
+                            </button>
+
+                            {/* Save payments */}
+                            <button
+                              onClick={handleSavePayments}
+                              disabled={isSavingPayments || !attPaymentAmount || !attPaymentMonth}
+                              className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-sm font-semibold text-white rounded-xl transition-all duration-200 shadow-md shadow-green-100"
+                              title={!attPaymentAmount ? "Avval summa kiriting" : ""}
+                            >
+                              {isSavingPayments ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                  Saqlanmoqda...
+                                </>
+                              ) : (
+                                <>
+                                  <DollarSign size={16} />
+                                  To'lov saqlash
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -531,7 +655,7 @@ export default function CombinedPage() {
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-semibold text-slate-700">Guruh tanlang</p>
-                    <p className="text-xs text-slate-400 mt-1">Davomat belgilash uchun yuqoridan guruh tanlang</p>
+                    <p className="text-xs text-slate-400 mt-1">Davomat va to'lov belgilash uchun yuqoridan guruh tanlang</p>
                   </div>
                 </div>
               )}
@@ -560,11 +684,8 @@ export default function CombinedPage() {
             </div>
 
             <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
-              {/* Guruh */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Guruh <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Guruh <span className="text-red-500">*</span></label>
                 <select
                   value={selectedGroupId}
                   onChange={(e) => handleGroupChange(e.target.value)}
@@ -577,11 +698,8 @@ export default function CombinedPage() {
                 </select>
               </div>
 
-              {/* Oy */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Oy <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Oy <span className="text-red-500">*</span></label>
                 <input
                   type="month"
                   value={month}
@@ -590,11 +708,8 @@ export default function CombinedPage() {
                 />
               </div>
 
-              {/* Summa */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Summa (so'm) <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Summa (so'm) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   min="0"
@@ -605,7 +720,6 @@ export default function CombinedPage() {
                 />
               </div>
 
-              {/* Studentlar */}
               {selectedGroupId && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
