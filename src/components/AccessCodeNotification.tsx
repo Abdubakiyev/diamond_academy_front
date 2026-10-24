@@ -1,83 +1,140 @@
 // src/components/AccessCodeNotification.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCurrentAccessCode, useGenerateAccessCode } from '@/features/hooks/useAccess';
-import { Key, Copy, RefreshCw, Clock, CheckCircle2 } from 'lucide-react';
+import { Key, Copy, RefreshCw, Clock, CheckCircle2, XCircle } from 'lucide-react';
+
+const CODE_LIFETIME_SECONDS = 300; // kod 5 daqiqa amal qiladi
+const EXPIRING_SOON_SECONDS = 120;
+const EXPIRED_RETRY_MS = 5000; // muddati tugagach yangi kodni har 5 soniyada so'raymiz
+
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const getErrorMessage = (err: unknown, fallback: string) => {
+  const e = err as {
+    message?: string;
+    response?: { data?: { message?: string | string[] } };
+  };
+  const msg = e?.response?.data?.message;
+  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  return text || e?.message || fallback;
+};
+
+// Clipboard API bo'lmagan (masalan, http) muhitlar uchun zaxira usul
+const copyText = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+};
 
 export default function AccessCodeNotification() {
-  const { data: accessCode, isLoading, error } = useCurrentAccessCode();
+  const { data: accessCode, isLoading, error, refetch, dataUpdatedAt } = useCurrentAccessCode();
   const generateMutation = useGenerateAccessCode();
+
+  const [now, setNow] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [actionError, setActionError] = useState('');
+  const lastRetry = useRef(0);
 
+  // Kod tugash payti: ma'lumot kelgan payt + qolgan soniyalar (render ichida Date.now() yo'q)
+  const expiresAt = accessCode ? dataUpdatedAt + accessCode.remainingSeconds * 1000 : 0;
+  const current = Math.max(now, dataUpdatedAt);
+  const timeLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - current) / 1000)) : 0;
+  const isExpired = !!accessCode && timeLeft === 0;
+  const isExpiringSoon = !!accessCode && !isExpired && timeLeft < EXPIRING_SOON_SECONDS;
+
+  /* ⏳ Bitta interval: soniyalarni yangilaydi va muddati tugasa yangi kodni so'raydi */
   useEffect(() => {
-    if (accessCode) {
-      setTimeLeft(accessCode.remainingSeconds);
-    }
-  }, [accessCode]);
-
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    if (!expiresAt) return;
+    const id = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= expiresAt && t - lastRetry.current >= EXPIRED_RETRY_MS) {
+        lastRetry.current = t;
+        refetch();
+      }
     }, 1000);
+    return () => clearInterval(id);
+  }, [expiresAt, refetch]);
 
-    return () => clearInterval(timer);
-  }, [timeLeft]);
+  /* "Nusxalandi" belgisi 2 soniyadan keyin yo'qoladi (unmount bo'lsa ham tozalanadi) */
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(t);
+  }, [copied]);
 
   const handleGenerateNewCode = async () => {
+    setActionError('');
     try {
       await generateMutation.mutateAsync();
-    } catch (error) {
-      console.error('Error generating new code:', error);
+      await refetch();
+    } catch (err) {
+      console.error('Error generating new code:', err);
+      setActionError(getErrorMessage(err, 'Yangi kod yaratib bo\'lmadi'));
     }
   };
 
-  const copyToClipboard = () => {
-    if (accessCode) {
-      navigator.clipboard.writeText(accessCode.code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+  const copyToClipboard = async () => {
+    if (!accessCode) return;
+    const ok = await copyText(accessCode.code);
+    if (ok) setCopied(true);
+    else setActionError("Nusxalab bo'lmadi, kodni qo'lda belgilab oling");
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  /* ───────────── Yuklanmoqda ───────────── */
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6">
-        <div className="animate-pulse flex items-center gap-4">
-          <div className="w-12 h-12 bg-white/20 rounded-full"></div>
-          <div className="flex-1">
-            <div className="h-4 bg-white/20 rounded w-1/3 mb-2"></div>
-            <div className="h-6 bg-white/20 rounded w-1/2"></div>
+      <div className="rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 p-6 shadow-lg">
+        <div className="flex animate-pulse items-center gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-white/20" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-1/3 rounded bg-white/20" />
+            <div className="h-8 w-1/2 rounded bg-white/20" />
           </div>
         </div>
       </div>
     );
   }
 
+  /* ───────────── Kod yo'q / xatolik ───────────── */
   if (error || !accessCode) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-red-100 p-3 rounded-full">
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="rounded-2xl bg-red-100 p-3">
             <Key className="text-red-600" size={24} />
           </div>
           <div className="flex-1">
-            <p className="text-red-800 font-medium">Access code topilmadi</p>
-            <p className="text-red-600 text-sm">Yangi kod yaratish uchun tugmani bosing</p>
+            <p className="font-semibold text-red-800">Access code topilmadi</p>
+            <p className="text-sm text-red-600">
+              {actionError || 'Yangi kod yaratish uchun tugmani bosing'}
+            </p>
           </div>
           <button
             onClick={handleGenerateNewCode}
             disabled={generateMutation.isPending}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
           >
             <RefreshCw size={16} className={generateMutation.isPending ? 'animate-spin' : ''} />
             Yaratish
@@ -87,62 +144,76 @@ export default function AccessCodeNotification() {
     );
   }
 
-  const isExpiringSoon = timeLeft < 120;
+  const tone = isExpired
+    ? 'from-slate-500 to-slate-700'
+    : isExpiringSoon
+      ? 'from-orange-500 to-red-600'
+      : 'from-indigo-500 to-violet-600';
+  const progress = Math.min(100, (timeLeft / CODE_LIFETIME_SECONDS) * 100);
 
   return (
-    <div className={`rounded-xl shadow-lg p-6 transition-all duration-300 ${
-      isExpiringSoon 
-        ? 'bg-gradient-to-r from-orange-500 to-red-600' 
-        : 'bg-gradient-to-r from-blue-500 to-indigo-600'
-    }`}>
-      <div className="flex flex-col md:flex-row items-center gap-6">
-        <div className="bg-white/20 p-4 rounded-full">
+    <div
+      className={`rounded-2xl bg-gradient-to-r p-6 shadow-lg transition-all duration-500 ${tone}`}
+    >
+      <div className="flex flex-col items-center gap-6 md:flex-row">
+        <div className="rounded-2xl bg-white/20 p-4">
           <Key className="text-white" size={32} />
         </div>
 
         <div className="flex-1 text-center md:text-left">
-          <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-            <h3 className="text-white text-lg font-semibold">Sayt kirish kodi</h3>
+          <div className="mb-3 flex flex-wrap items-center justify-center gap-2 md:justify-start">
+            <h3 className="text-lg font-semibold text-white">Sayt kirish kodi</h3>
             {isExpiringSoon && (
-              <span className="bg-white/20 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+              <span className="animate-pulse rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white">
                 Tez orada tugaydi!
               </span>
             )}
+            {isExpired && (
+              <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white">
+                Muddati tugadi, yangisi olinmoqda...
+              </span>
+            )}
           </div>
-          
-          <div className="flex items-center gap-3 justify-center md:justify-start">
-            <div className="bg-white/90 px-6 py-3 rounded-lg">
-              <p className="text-3xl font-bold text-gray-800 tracking-wider font-mono">
-                {accessCode.code}
-              </p>
+
+          <div className="flex items-center justify-center gap-3 md:justify-start">
+            <div
+              className={`flex gap-1.5 sm:gap-2 ${isExpired ? 'opacity-50' : ''}`}
+              aria-label={`Kirish kodi: ${accessCode.code}`}
+            >
+              {accessCode.code.split('').map((ch, i) => (
+                <span
+                  key={i}
+                  className="flex h-12 w-9 items-center justify-center rounded-lg bg-white/95 font-mono text-2xl font-bold text-slate-800 shadow-sm sm:h-14 sm:w-11 sm:text-3xl"
+                >
+                  {ch}
+                </span>
+              ))}
             </div>
-            
+
             <button
               onClick={copyToClipboard}
-              className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all"
+              disabled={isExpired}
+              className="rounded-xl bg-white/20 p-3 text-white transition-all hover:bg-white/30 disabled:opacity-50"
               title="Nusxa olish"
+              aria-label="Kodni nusxalash"
             >
-              {copied ? (
-                <CheckCircle2 size={20} className="text-green-300" />
-              ) : (
-                <Copy size={20} />
-              )}
+              {copied ? <CheckCircle2 size={20} className="text-green-300" /> : <Copy size={20} />}
             </button>
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-3">
-          <div className="bg-white/20 px-4 py-2 rounded-lg flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2">
             <Clock className="text-white" size={20} />
-            <span className="text-white font-bold text-xl font-mono">
+            <span className="font-mono text-xl font-bold tabular-nums text-white">
               {formatTime(timeLeft)}
             </span>
           </div>
-          
+
           <button
             onClick={handleGenerateNewCode}
             disabled={generateMutation.isPending}
-            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm text-white transition-all hover:bg-white/30 disabled:opacity-50"
           >
             <RefreshCw size={16} className={generateMutation.isPending ? 'animate-spin' : ''} />
             Yangilash
@@ -150,15 +221,26 @@ export default function AccessCodeNotification() {
         </div>
       </div>
 
-      <div className="mt-4 bg-white/20 rounded-full h-2 overflow-hidden">
-        <div 
-          className="bg-white h-full transition-all duration-1000 ease-linear"
-          style={{ width: `${(timeLeft / 300) * 100}%` }}
-        ></div>
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/20">
+        <div
+          className="h-full bg-white transition-all duration-1000 ease-linear"
+          style={{ width: `${progress}%` }}
+        />
       </div>
 
-      <p className="text-white/80 text-sm mt-3 text-center md:text-left">
-        Bu kodni foydalanuvchilar saytga kirish uchun ishlatadi. Kod har 5 minutda avtomatik yangilanadi.
+      {actionError && (
+        <div
+          role="alert"
+          className="mt-4 flex items-start gap-2 rounded-xl bg-white/15 px-3 py-2 text-sm text-white"
+        >
+          <XCircle size={16} className="mt-0.5 shrink-0" />
+          {actionError}
+        </div>
+      )}
+
+      <p className="mt-3 text-center text-sm text-white/80 md:text-left">
+        Bu kodni foydalanuvchilar saytga kirish uchun ishlatadi. Kod har 5 minutda avtomatik
+        yangilanadi.
       </p>
     </div>
   );

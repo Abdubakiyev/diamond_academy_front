@@ -15,8 +15,8 @@ export const useAuth = () => {
       setUser(res.user);
       setLoading(false);
       return res;
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Something went wrong');
       setLoading(false);
       throw err;
     }

@@ -14,8 +14,8 @@ export const useTestResult = () => {
     try {
       const res = await submitTestResult(data);
       return res;
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit test');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to submit test');
       throw err;
     } finally {
       setLoading(false);
@@ -29,8 +29,8 @@ export const useTestResult = () => {
       const res = await getTestResults();
       setResults(res);
       return res;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch results');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to fetch results');
       throw err;
     } finally {
       setLoading(false);
@@ -43,8 +43,8 @@ export const useTestResult = () => {
     try {
       const res = await getTestResult(id);
       return res;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch result');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to fetch result');
       throw err;
     } finally {
       setLoading(false);

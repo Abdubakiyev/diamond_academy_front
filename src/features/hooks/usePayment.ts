@@ -77,8 +77,8 @@ export const useCreatePayment = () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success('To\'lov muvaffaqiyatli qo\'shildi');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
+    onError: (error: unknown) => {
+      toast.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Xatolik yuz berdi');
     },
   });
 };
@@ -94,8 +94,8 @@ export const useUpdatePayment = () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success('To\'lov yangilandi');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
+    onError: (error: unknown) => {
+      toast.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Xatolik yuz berdi');
     },
   });
 };
@@ -110,8 +110,8 @@ export const useMarkAsPaid = () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success('To\'lov to\'langan deb belgilandi');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
+    onError: (error: unknown) => {
+      toast.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Xatolik yuz berdi');
     },
   });
 };
@@ -126,8 +126,8 @@ export const useDeletePayment = () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success('To\'lov o\'chirildi');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
+    onError: (error: unknown) => {
+      toast.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Xatolik yuz berdi');
     },
   });
 };
@@ -142,8 +142,8 @@ export const useMarkOverdue = () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success(data.message);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
+    onError: (error: unknown) => {
+      toast.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Xatolik yuz berdi');
     },
   });
 };

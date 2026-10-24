@@ -7,7 +7,7 @@ export const useAttendanceByGroupAndDate = (groupId: string, date: string) => {
   return useQuery({
     queryKey: ['attendance', groupId, date],
     queryFn: async () => {
-      const { data } = await api.get<any[]>(`/attendance/group/${groupId}/date/${date}`);
+      const { data } = await api.get<unknown[]>(`/attendance/group/${groupId}/date/${date}`);
       return data;
     },
     enabled: !!groupId && !!date,

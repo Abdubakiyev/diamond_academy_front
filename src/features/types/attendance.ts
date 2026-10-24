@@ -4,7 +4,7 @@ export interface Attendance {
   group: string;
   date: string;
   present: boolean;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -14,7 +14,7 @@ export interface CreateAttendanceDto {
   group: string;
   date: string;
   present?: boolean;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
 }
 
 export interface UpdateAttendanceDto {
@@ -22,7 +22,7 @@ export interface UpdateAttendanceDto {
   group?: string;
   date?: string;
   present?: boolean;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
 }
 
 export interface AttendanceStats {

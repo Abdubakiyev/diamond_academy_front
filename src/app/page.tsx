@@ -1,215 +1,255 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLevels } from "@/features/hooks/useLevel";
+import { GraduationCap, ArrowRight, AlertCircle, RefreshCw, BookOpen } from "lucide-react";
 
+/* ───────────── Token: serverda noma'lum (null), brauzerda true/false ───────────── */
+const subscribe = (cb: () => void) => {
+  window.addEventListener("storage", cb);
+  return () => window.removeEventListener("storage", cb);
+};
+function useHasToken(): boolean | null {
+  return useSyncExternalStore(
+    subscribe,
+    () => !!localStorage.getItem("access_token"),
+    () => null,
+  );
+}
+
+/* ───────────── Darajalar uchun nom va ranglar ───────────── */
+const ORDER = ["BEGINNER", "ELEMENTARY", "INTERMEDIATE", "ADVANCED"];
+
+const levelNames: Record<string, string> = {
+  BEGINNER: "Boshlang'ich",
+  ELEMENTARY: "Elementar",
+  INTERMEDIATE: "O'rta",
+  ADVANCED: "Yuqori",
+};
+
+type LevelStyle = { icon: string; bar: string; chip: string };
+const levelStyles: Record<string, LevelStyle> = {
+  BEGINNER: {
+    icon: "from-emerald-400 to-green-600",
+    bar: "from-emerald-400 to-green-500",
+    chip: "bg-emerald-50 text-emerald-700",
+  },
+  ELEMENTARY: {
+    icon: "from-sky-400 to-blue-600",
+    bar: "from-sky-400 to-blue-500",
+    chip: "bg-sky-50 text-sky-700",
+  },
+  INTERMEDIATE: {
+    icon: "from-violet-500 to-purple-600",
+    bar: "from-violet-400 to-purple-500",
+    chip: "bg-violet-50 text-violet-700",
+  },
+  ADVANCED: {
+    icon: "from-amber-400 to-orange-600",
+    bar: "from-amber-400 to-orange-500",
+    chip: "bg-amber-50 text-amber-700",
+  },
+};
+const defaultStyle: LevelStyle = {
+  icon: "from-indigo-500 to-violet-600",
+  bar: "from-indigo-500 to-violet-500",
+  chip: "bg-indigo-50 text-indigo-700",
+};
+
+const rank = (type: string) => {
+  const i = ORDER.indexOf(type);
+  return i === -1 ? ORDER.length : i;
+};
+
+const steps = [
+  { title: "Level tanlang", text: "O'zingizga mos darajani tanlang", box: "bg-indigo-100 text-indigo-600" },
+  { title: "Testni boshlang", text: "Savollarni diqqat bilan o'qing", box: "bg-emerald-100 text-emerald-600" },
+  { title: "Natijani ko'ring", text: "O'z natijangizni tahlil qiling", box: "bg-violet-100 text-violet-600" },
+];
+
+/* ───────────── Sahifa ───────────── */
 export default function Home() {
   const router = useRouter();
-  const { data: levels = [], isLoading, error } = useLevels();
+  const hasToken = useHasToken();
+  const { data, isLoading, error, refetch, isFetching } = useLevels();
 
-  // ✅ Token check (client-safe)
+  const levels = useMemo(
+    () => [...(data ?? [])].sort((a, b) => rank(a.type) - rank(b.type)),
+    [data],
+  );
+
+  // Token bo'lmasa — ro'yxatdan o'tishga (replace: orqaga qaytganda sikl bo'lmasin)
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (hasToken === false) router.replace("/register");
+  }, [hasToken, router]);
 
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      router.replace("/register"); // replace → back bosilganda qaytib kelmasin
-    }
-  }, [router]);
-
-  // ✅ Level bosilganda test page
-  const handleLevelClick = (levelId: string) => {
-    router.push(`/test/${levelId}`);
-  };
+  // Token tekshirilguncha (yoki yo'naltirilayotganda) sahifa mazmuni ko'rsatilmaydi
+  const checking = hasToken !== true;
+  const showLoading = checking || isLoading;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50/40 to-white">
+      <div className="pointer-events-none absolute -left-32 top-20 h-96 w-96 rounded-full bg-indigo-300/30 blur-3xl" />
+      <div className="pointer-events-none absolute -right-32 top-1/2 h-96 w-96 rounded-full bg-violet-300/30 blur-3xl" />
+
       <Header />
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-        {/* Hero Section */}
-        <div className="text-center mb-10 mt-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Bilimingizni <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Sinab Ko'ring</span>
+      <main className="relative mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6 lg:p-8">
+        {/* Hero */}
+        <div className="mb-12 mt-6 text-center">
+          <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-800 sm:text-4xl md:text-5xl">
+            Bilimingizni{" "}
+            <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+              Sinab Ko&apos;ring
+            </span>
           </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            O'zingizga mos darajani tanlang va testni boshlang
+          <p className="mx-auto max-w-2xl text-lg text-slate-500">
+            O&apos;zingizga mos darajani tanlang va testni boshlang
           </p>
         </div>
 
-        {/* Loading State */}
-        {isLoading&& (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
+        {/* Yuklanmoqda */}
+        {showLoading && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="animate-pulse rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm"
+              >
+                <div className="mb-5 h-14 w-14 rounded-2xl bg-slate-200" />
+                <div className="mb-3 h-6 w-2/3 rounded bg-slate-200" />
+                <div className="h-4 w-1/3 rounded bg-slate-100" />
+                <div className="mt-8 h-10 rounded-xl bg-slate-100" />
               </div>
-            </div>
-            <p className="mt-6 text-gray-600 text-lg font-medium">Level yuklanmoqda...</p>
-            <p className="text-gray-500 text-sm mt-2">Iltimos, biroz kuting</p>
+            ))}
           </div>
         )}
 
-        {/* Error State */}
-        {error && (
-          <div className="max-w-lg mx-auto bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-8 text-center shadow-lg">
-            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
+        {/* Xatolik */}
+        {!showLoading && error && (
+          <div className="mx-auto max-w-lg rounded-2xl border border-red-200 bg-white p-8 text-center shadow-lg">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+              <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Xatolik yuz berdi</h3>
-            <p className="text-gray-600 mb-6">{error?.message}</p>
+            <h3 className="mb-2 text-xl font-bold text-slate-800">Xatolik yuz berdi</h3>
+            <p className="mb-6 text-sm text-red-600">{error.message}</p>
             <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md hover:shadow-lg"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 font-medium text-white shadow-md shadow-indigo-500/25 transition-all hover:from-indigo-700 hover:to-violet-700 disabled:opacity-60"
             >
-              Qayta yuklash
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Qayta urinish
             </button>
           </div>
         )}
 
-        {/* Levels Grid */}
-        {!isLoading && !error && (
+        {/* Levellar */}
+        {!showLoading && !error && levels.length > 0 && (
           <div>
-            <div className="flex justify-between items-center mb-8">
+            <div className="mb-8 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Levellar</h2>
-                <p className="text-gray-600 mt-2">O'zingizga mos darajani tanlang</p>
+                <h2 className="text-2xl font-bold text-slate-800 sm:text-3xl">Levellar</h2>
+                <p className="mt-1 text-slate-500">O&apos;zingizga mos darajani tanlang</p>
               </div>
-              <div className="hidden sm:block px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-medium shadow-lg">
+              <div className="hidden rounded-full bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-emerald-500/25 sm:block">
                 {levels.length} ta level mavjud
               </div>
             </div>
 
-            {/* Level Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {levels.map((level, index) => (
-                <div
-                  key={level.id}
-                  onClick={() => handleLevelClick(level.id)}
-                  className="group relative bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer overflow-hidden"
-                >
-                  {/* Corner accent */}
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-blue-100 to-indigo-100 transform translate-x-10 -translate-y-10 rotate-45"></div>
-                  
-                  {/* Level number */}
-                  <div className="absolute top-4 right-4 w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
-                    {index + 1}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="relative z-10">
-                    <div className="mb-4">
-                      <div className="w-14 h-14 mb-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
-                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {levels.map((level, index) => {
+                const style = levelStyles[level.type] ?? defaultStyle;
+                return (
+                  <Link
+                    key={level.id}
+                    href={`/test/${level.id}`}
+                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/30"
+                  >
+                    <div className="mb-5 flex items-start justify-between">
+                      <div
+                        className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg ${style.icon}`}
+                      >
+                        <GraduationCap className="h-7 w-7 text-white" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {level.type}
-                      </h3>
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-500">
+                        {index + 1}
+                      </span>
                     </div>
-                    
-                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
-                      <span className="text-sm text-gray-500">Testni boshlash</span>
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-indigo-100 group-hover:from-blue-200 group-hover:to-indigo-200 rounded-full flex items-center justify-center transition-all">
-                        <svg className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </div>
+
+                    <h3 className="mb-2 text-xl font-bold text-slate-800 transition-colors group-hover:text-indigo-600">
+                      {levelNames[level.type] ?? level.type}
+                    </h3>
+                    <span
+                      className={`mb-6 inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${style.chip}`}
+                    >
+                      {level.type}
+                    </span>
+
+                    <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-5">
+                      <span className="text-sm text-slate-500">Testni boshlash</span>
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition-all group-hover:bg-indigo-600 group-hover:text-white">
+                        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
                     </div>
-                  </div>
-                  
-                  {/* Hover effect line */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-                </div>
-              ))}
+
+                    <div
+                      className={`absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-gradient-to-r transition-transform duration-300 group-hover:scale-x-100 ${style.bar}`}
+                    />
+                  </Link>
+                );
+              })}
             </div>
 
-            {/* Stats Section */}
-            <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-4xl font-bold mb-2">{levels.length}</div>
-                  <p className="text-blue-100">Mavjud Level</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold mb-2">
-                    {levels.length * 10}+
-                  </div>
-                  <p className="text-blue-100">Jami Testlar</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold mb-2">
-                    1000+
-                  </div>
-                  <p className="text-blue-100">Faol O'quvchilar</p>
-                </div>
-              </div>
-              <div className="mt-8 pt-6 border-t border-blue-400">
-                <p className="text-center text-blue-100">
-                  Har bir level sizning bilimingizni yangi bosqichga olib chiqadi
-                </p>
-              </div>
+            {/* Rag'bat */}
+            <div className="mt-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-700 p-8 text-center text-white shadow-xl shadow-indigo-500/20">
+              <p className="text-lg font-medium">
+                Har bir level sizning bilimingizni yangi bosqichga olib chiqadi
+              </p>
             </div>
 
-            {/* Instructions */}
-            <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Qanday boshlash kerak?</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-blue-600 font-bold">1</span>
+            {/* Qanday boshlash kerak */}
+            <div className="mt-8 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+              <h3 className="mb-5 text-xl font-bold text-slate-800">Qanday boshlash kerak?</h3>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {steps.map((s, i) => (
+                  <div key={s.title} className="flex items-start gap-4">
+                    <div
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${s.box}`}
+                    >
+                      {i + 1}
+                    </div>
+                    <div>
+                      <h4 className="mb-1 font-bold text-slate-800">{s.title}</h4>
+                      <p className="text-sm text-slate-500">{s.text}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 mb-1">Level tanlang</h4>
-                    <p className="text-gray-600 text-sm">O'zingizga mos darajani tanlang</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-green-600 font-bold">2</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 mb-1">Testni boshlang</h4>
-                    <p className="text-gray-600 text-sm">Savollarni diqqat bilan o'qing</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-purple-600 font-bold">3</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 mb-1">Natijani ko'ring</h4>
-                    <p className="text-gray-600 text-sm">O'z natijangizni tahlil qiling</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* Empty State */}
-        {!isLoading && !error && levels.length === 0 && (
-          <div className="max-w-lg mx-auto bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl p-10 text-center shadow-xl">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+        {/* Levellar yo'q */}
+        {!showLoading && !error && levels.length === 0 && (
+          <div className="mx-auto max-w-lg rounded-2xl border border-slate-200/70 bg-white p-10 text-center shadow-lg">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50">
+              <BookOpen className="h-10 w-10 text-indigo-300" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Levellar topilmadi</h3>
-            <p className="text-gray-600 mb-6">
-              Hozircha hech qanday level mavjud emas. Iltimos, keyinroq yana urinib ko'ring.
+            <h3 className="mb-3 text-2xl font-bold text-slate-800">Levellar topilmadi</h3>
+            <p className="mb-6 text-slate-500">
+              Hozircha hech qanday level mavjud emas. Iltimos, keyinroq yana urinib ko&apos;ring.
             </p>
             <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md hover:shadow-lg"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 font-medium text-white shadow-md shadow-indigo-500/25 transition-all hover:from-indigo-700 hover:to-violet-700 disabled:opacity-60"
             >
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               Yangilash
             </button>
           </div>

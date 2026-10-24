@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 
-const API_URL = 'https://diamond-academy-back-guqx.onrender.com';
+const API_URL = 'https://diamondacademyback-production.up.railway.app';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -30,7 +30,7 @@ api.interceptors.response.use(
   }
 );
 
-export const handleApiError = (error: any): string => {
+export const handleApiError = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     return error.response?.data?.message || error.message;
   }

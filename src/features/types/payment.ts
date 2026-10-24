@@ -17,7 +17,7 @@ export interface Payment {
   status: PaymentStatus;
   month: string;
   paidAt?: string;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,14 +29,14 @@ export interface CreatePaymentDto {
   status?: PaymentStatus;
   month: string;
   paidAt?: string;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
 }
 
 export interface UpdatePaymentDto {
   amount?: number;
   status?: PaymentStatus;
   paidAt?: string;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
 }
 
 export interface PaymentFilter {

@@ -1,409 +1,340 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/features/api/auth';
-import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { TestResult } from '@/features/types/test-result';
-import { Trophy, CheckCircle, XCircle, Home, Clock, Calendar, User, Award, TrendingUp, Target } from 'lucide-react';
+import {
+  Trophy,
+  CheckCircle,
+  XCircle,
+  Home,
+  Calendar,
+  User,
+  Award,
+  TrendingUp,
+  Target,
+  RefreshCw,
+  ListChecks,
+} from 'lucide-react';
 
-function ResultContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const resultId = searchParams.get('resultId');
-  const [result, setResult] = useState<TestResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [scorePercentage, setScorePercentage] = useState(0);
+/* ───────────── Yordamchilar ───────────── */
+const levelNames: Record<string, string> = {
+  BEGINNER: "Boshlang'ich",
+  ELEMENTARY: 'Elementar',
+  INTERMEDIATE: "O'rta",
+  ADVANCED: 'Yuqori',
+};
+const levelLabel = (type?: string) => (type ? (levelNames[type] ?? type) : "Noma'lum");
 
+const getErrorMessage = (err: unknown, fallback: string) => {
+  const e = err as {
+    message?: string;
+    response?: { status?: number; data?: { message?: string | string[] } };
+  };
+  const msg = e?.response?.data?.message;
+  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  if (text) return text;
+  if (e?.response?.status === 404) return 'Soralgan test natijasi mavjud emas';
+  return e?.message || fallback;
+};
+
+type Grade = {
+  key: string;
+  label: string;
+  message: string;
+  gradient: string;
+  min: number;
+};
+
+const GRADES: Grade[] = [
+  { key: 'a', label: "A'lo", message: 'Ajoyib natija! Mukammal! 🎯', gradient: 'from-emerald-500 to-green-600', min: 90 },
+  { key: 'b', label: 'Yaxshi', message: 'Yaxshi natija! Juda yaxshi! 👍', gradient: 'from-green-500 to-teal-600', min: 75 },
+  { key: 'c', label: 'Qoniqarli', message: 'Qoniqarli natija! Yaxshilashingiz mumkin. 💪', gradient: 'from-amber-500 to-orange-600', min: 60 },
+  { key: 'd', label: "O'rtacha", message: "Yaxshilash uchun imkoniyat bor. Qayta urinib ko'ring! 📚", gradient: 'from-rose-500 to-red-600', min: 0 },
+];
+const gradeOf = (p: number) => GRADES.find((g) => p >= g.min) ?? GRADES[GRADES.length - 1];
+
+const tips = [
+  { title: 'Muntazam mashq', text: 'Har kuni 20 daqiqa mashq qiling' },
+  { title: 'Xatolarni tahlil', text: "Noto'g'ri javoblaringizni qayta ko'rib chiqing" },
+  { title: 'Qayta urinish', text: "Bir hafta o'tgach testni qayta ishlang" },
+];
+
+const pageBg = 'min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/40 to-white';
+
+/* ───────────── Natija ko'rinishi ───────────── */
+function ResultView({
+  result,
+  onHome,
+  onRefresh,
+  refreshing,
+}: {
+  result: TestResult;
+  onHome: () => void;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  // Chiziqlar va doira yuklangandan keyin to'lib borishi uchun
+  const [shown, setShown] = useState(false);
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      router.push("/register");
-    }
-  }, [router]);
+    const id = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
-  useEffect(() => {
-    if (!resultId) return;
+  const total = result.correctCount + result.wrongCount;
+  const correctPct = total > 0 ? (result.correctCount / total) * 100 : 0;
+  const wrongPct = total > 0 ? (result.wrongCount / total) * 100 : 0;
+  const percentage = Math.round(correctPct);
+  const grade = gradeOf(percentage);
 
-    const fetchResult = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) throw new Error('No token found');
+  const R = 70;
+  const C = 2 * Math.PI * R;
 
-        const res = await api.get<TestResult>(`/test-result/${resultId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        setResult(res.data);
-        
-        if (res.data.correctCount !== undefined && res.data.wrongCount !== undefined) {
-          const total = res.data.correctCount + res.data.wrongCount;
-          const percentage = total > 0 ? Math.round((res.data.correctCount / total) * 100) : 0;
-          setScorePercentage(percentage);
-        }
-      } catch (err: any) {
-        console.error(err);
-        alert(err.message || 'Failed to load result');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchResult();
-  }, [resultId]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <Header />
-        <main className="flex flex-col items-center justify-center min-h-[60vh] p-8">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
-            </div>
-          </div>
-          <p className="mt-6 text-gray-600 text-lg font-medium">Natija yuklanmoqda...</p>
-          <p className="text-gray-500 text-sm mt-2">Iltimos, biroz kuting</p>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!result) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <Header />
-        <main className="flex flex-col items-center justify-center min-h-[60vh] p-8">
-          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-red-100 to-pink-100 rounded-full flex items-center justify-center">
-            <XCircle className="w-10 h-10 text-red-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Natija topilmadi</h2>
-          <p className="text-gray-600 mb-6 text-center">Soralgan test natijasi mavjud emas</p>
-          <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md hover:shadow-lg"
-          >
-            Bosh sahifaga qaytish
-          </button>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  const totalQuestions = result.correctCount + result.wrongCount;
-  const percentage = totalQuestions > 0 ? Math.round((result.correctCount / totalQuestions) * 100) : 0;
-  
-  const getResultColor = () => {
-    if (percentage >= 90) return 'from-emerald-500 to-green-600';
-    if (percentage >= 75) return 'from-green-500 to-emerald-600';
-    if (percentage >= 60) return 'from-amber-500 to-orange-600';
-    return 'from-red-500 to-rose-600';
-  };
-
-  const getResultMessage = () => {
-    if (percentage >= 90) return "Ajoyib natija! Mukammal! 🎯";
-    if (percentage >= 75) return "Yaxshi natija! Juda yaxshi! 👍";
-    if (percentage >= 60) return "Qoniqarli natija! Yaxshilashingiz mumkin. 💪";
-    return "Yaxshilash uchun imkoniyat bor. Qayta urinib ko'ring! 📚";
-  };
-
-  const getResultLevel = () => {
-    if (percentage >= 90) return "A'lo";
-    if (percentage >= 75) return "Yaxshi";
-    if (percentage >= 60) return "Qoniqarli";
-    return "O'rtacha";
-  };
+  const details = [
+    { icon: User, label: 'Foydalanuvchi', value: result.user?.name || "Noma'lum", box: 'bg-indigo-100 text-indigo-600' },
+    { icon: Target, label: 'Daraja', value: levelLabel(result.level?.type), box: 'bg-emerald-100 text-emerald-600' },
+    {
+      icon: Calendar,
+      label: 'Yakunlangan sana',
+      value: result.createdAt
+        ? new Date(result.createdAt).toLocaleDateString('uz-UZ', { day: '2-digit', month: 'long', year: 'numeric' })
+        : "Noma'lum",
+      box: 'bg-violet-100 text-violet-600',
+    },
+    { icon: ListChecks, label: 'Jami savollar', value: `${total} ta`, box: 'bg-amber-100 text-amber-600' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className={pageBg}>
       <Header />
 
-      <main className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className={`bg-gradient-to-r ${getResultColor()} rounded-2xl p-6 md:p-8 text-white shadow-xl mb-8`}>
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="mb-6 md:mb-0 md:mr-8">
-              <div className="flex items-center gap-2 mb-3">
-                <Trophy className="w-6 h-6" />
+      <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+        {/* Asosiy natija */}
+        <div className={`mb-8 overflow-hidden rounded-3xl bg-gradient-to-r p-6 text-white shadow-xl md:p-10 ${grade.gradient}`}>
+          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
+            <div className="text-center md:text-left">
+              <div className="mb-3 flex items-center justify-center gap-2 md:justify-start">
+                <Trophy className="h-6 w-6" />
                 <span className="text-white/90">Test natijasi</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-3">{getResultMessage()}</h1>
+              <h1 className="mb-3 text-3xl font-bold leading-tight md:text-4xl">{grade.message}</h1>
               <p className="text-white/90">
-                {result.user?.name || "Foydalanuvchi"} - {result.level?.type || "Level"}
+                {result.user?.name || 'Foydalanuvchi'} · {levelLabel(result.level?.type)} darajasi
               </p>
             </div>
-            
-            <div className="relative">
-              <div className="w-40 h-40 bg-white/10 backdrop-blur-sm rounded-full flex flex-col items-center justify-center">
-                <div className="text-5xl font-bold">{percentage}%</div>
-                <div className="text-white/90 mt-2">Umumiy natija</div>
-              </div>
-              <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-                <div className="w-32 h-32 border-4 border-white/30 rounded-full"></div>
+
+            <div className="relative h-44 w-44 shrink-0">
+              <svg viewBox="0 0 176 176" className="h-full w-full -rotate-90">
+                <circle cx="88" cy="88" r={R} fill="none" strokeWidth="12" className="stroke-white/25" />
+                <circle
+                  cx="88"
+                  cy="88"
+                  r={R}
+                  fill="none"
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                  className="stroke-white transition-all duration-1000 ease-out"
+                  strokeDasharray={C}
+                  strokeDashoffset={shown ? C - (C * percentage) / 100 : C}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-5xl font-bold">{percentage}%</span>
+                <span className="mt-1 text-sm text-white/90">Umumiy natija</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center mr-4">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+        {/* Ko'rsatkichlar */}
+        <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100">
+                <CheckCircle className="h-6 w-6 text-emerald-600" />
               </div>
               <div>
-                <p className="text-gray-600 text-sm">To'g'ri javoblar</p>
-                <p className="text-3xl font-bold text-gray-900">{result.correctCount}</p>
+                <p className="text-sm text-slate-500">To&apos;g&apos;ri javoblar</p>
+                <p className="text-3xl font-bold text-slate-800">{result.correctCount}</p>
               </div>
             </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Foiz</span>
-                <span>{Math.round((result.correctCount / totalQuestions) * 100)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-1000"
-                  style={{ width: `${(result.correctCount / totalQuestions) * 100}%` }}
-                ></div>
-              </div>
+            <div className="mb-1 flex justify-between text-sm text-slate-500">
+              <span>Foiz</span>
+              <span>{Math.round(correctPct)}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-1000"
+                style={{ width: shown ? `${correctPct}%` : '0%' }}
+              />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-red-100 to-rose-100 rounded-lg flex items-center justify-center mr-4">
-                <XCircle className="w-6 h-6 text-red-600" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100">
+                <XCircle className="h-6 w-6 text-rose-600" />
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Noto'g'ri javoblar</p>
-                <p className="text-3xl font-bold text-gray-900">{result.wrongCount}</p>
+                <p className="text-sm text-slate-500">Noto&apos;g&apos;ri javoblar</p>
+                <p className="text-3xl font-bold text-slate-800">{result.wrongCount}</p>
               </div>
             </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Foiz</span>
-                <span>{Math.round((result.wrongCount / totalQuestions) * 100)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-red-400 to-rose-500 h-2 rounded-full transition-all duration-1000"
-                  style={{ width: `${(result.wrongCount / totalQuestions) * 100}%` }}
-                ></div>
-              </div>
+            <div className="mb-1 flex justify-between text-sm text-slate-500">
+              <span>Foiz</span>
+              <span>{Math.round(wrongPct)}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-rose-400 to-red-500 transition-all duration-1000"
+                style={{ width: shown ? `${wrongPct}%` : '0%' }}
+              />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center mr-4">
-                <Award className="w-6 h-6 text-blue-600" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100">
+                <Award className="h-6 w-6 text-indigo-600" />
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Daraja</p>
-                <p className="text-3xl font-bold text-gray-900">{getResultLevel()}</p>
+                <p className="text-sm text-slate-500">Baho</p>
+                <p className="text-3xl font-bold text-slate-800">{grade.label}</p>
               </div>
             </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Umumiy natija</span>
-                <span>{percentage}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`bg-gradient-to-r h-2 rounded-full transition-all duration-1000 ${getResultColor()}`}
-                  style={{ width: `${percentage}%` }}
-                ></div>
-              </div>
+            <div className="mb-1 flex justify-between text-sm text-slate-500">
+              <span>Umumiy natija</span>
+              <span>{percentage}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={`h-full rounded-full bg-gradient-to-r transition-all duration-1000 ${grade.gradient}`}
+                style={{ width: shown ? `${percentage}%` : '0%' }}
+              />
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <User className="w-5 h-5 mr-3 text-blue-600" />
-              Test ma'lumotlari
+        {/* Ma'lumotlar va tahlil */}
+        <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <h2 className="mb-5 flex items-center text-lg font-bold text-slate-800">
+              <User className="mr-3 h-5 w-5 text-indigo-600" />
+              Test ma&apos;lumotlari
             </h2>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mr-3">
-                    <User className="w-5 h-5 text-blue-600" />
+            <div className="space-y-3">
+              {details.map((d) => (
+                <div key={d.label} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${d.box}`}>
+                    <d.icon className="h-5 w-5" />
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-800">Foydalanuvchi</p>
-                    <p className="font-medium text-gray-800">{result.user?.name || "Noma'lum"}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center mr-3">
-                    <Target className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-800">Level</p>
-                    <p className="font-medium text-gray-800">{result.level?.type || "Noma'lum"}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs text-slate-500">{d.label}</p>
+                    <p className="truncate font-semibold text-slate-800">{d.value}</p>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center mr-3">
-                    <Calendar className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-800">Yakunlangan sana</p>
-                    <p className="font-medium text-gray-800">
-                      {result.createdAt ? new Date(result.createdAt).toLocaleDateString() : "Noma'lum"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 flex items-center justify-center mr-3">
-                    <Clock className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-800">Jami savollar</p>
-                    <p className="font-medium text-gray-800">{totalQuestions} ta</p>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <TrendingUp className="w-5 h-5 mr-3 text-blue-600" />
-              Statistik tahlil
+          <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <h2 className="mb-5 flex items-center text-lg font-bold text-slate-800">
+              <TrendingUp className="mr-3 h-5 w-5 text-indigo-600" />
+              Natija taqsimoti
             </h2>
-            
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium text-gray-700">To'g'ri javoblar</span>
-                  <span className="text-green-600 font-bold">{result.correctCount} ta</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-gradient-to-r from-green-400 to-emerald-500 h-3 rounded-full transition-all duration-1000"
-                    style={{ width: `${(result.correctCount / totalQuestions) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
 
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium text-gray-700">Noto'g'ri javoblar</span>
-                  <span className="text-red-600 font-bold">{result.wrongCount} ta</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-gradient-to-r from-red-400 to-rose-500 h-3 rounded-full transition-all duration-1000"
-                    style={{ width: `${(result.wrongCount / totalQuestions) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
+            <div className="mb-2 flex h-4 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-1000"
+                style={{ width: shown ? `${correctPct}%` : '0%' }}
+              />
+              <div
+                className="bg-gradient-to-r from-rose-400 to-red-500 transition-all duration-1000"
+                style={{ width: shown ? `${wrongPct}%` : '0%' }}
+              />
+            </div>
+            <div className="mb-6 flex justify-between text-sm">
+              <span className="font-semibold text-emerald-600">{result.correctCount} ta to&apos;g&apos;ri</span>
+              <span className="font-semibold text-rose-600">{result.wrongCount} ta noto&apos;g&apos;ri</span>
+            </div>
 
-              <div className="pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{result.correctCount}</div>
-                    <p className="text-gray-600 text-sm">To'g'ri</p>
+            <p className="mb-3 text-sm font-medium text-slate-600">Baho shkalasi</p>
+            <div className="space-y-2">
+              {GRADES.map((g) => {
+                const active = g.key === grade.key;
+                return (
+                  <div
+                    key={g.key}
+                    className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-sm transition ${
+                      active
+                        ? 'border-indigo-300 bg-indigo-50 ring-4 ring-indigo-500/10'
+                        : 'border-slate-200 bg-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <span className={`h-2.5 w-2.5 rounded-full bg-gradient-to-r ${g.gradient}`} />
+                      <span className={active ? 'font-bold text-slate-800' : 'text-slate-600'}>
+                        {g.label}
+                      </span>
+                    </span>
+                    <span className="text-slate-400">
+                      {g.min === 0 ? "60% dan past" : `${g.min}% dan yuqori`}
+                    </span>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-red-50 to-rose-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{result.wrongCount}</div>
-                    <p className="text-gray-600 text-sm">Noto'g'ri</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200">
-                <div className="text-center">
-                  <div className={`inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r ${getResultColor()} text-white font-medium`}>
-                    <Award className="w-4 h-4 mr-2" />
-                    {getResultLevel()} daraja
-                  </div>
-                  <p className="text-gray-600 text-sm mt-2">
-                    {percentage >= 70 ? "Ajoyib ishladingiz!" : "Yana bir bor urinib ko'ring!"}
-                  </p>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex flex-col sm:flex-row items-center justify-between">
-            <div className="mb-4 sm:mb-0">
-              <h3 className="text-lg font-bold text-gray-900">Keyingi qadamlar</h3>
-              <p className="text-gray-600 text-sm">Natijangizni yaxshilash uchun davom eting</p>
+        {/* Keyingi qadamlar */}
+        <div className="mb-6 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div className="text-center sm:text-left">
+              <h3 className="text-lg font-bold text-slate-800">Keyingi qadamlar</h3>
+              <p className="text-sm text-slate-500">Natijangizni yaxshilash uchun davom eting</p>
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <button
-                onClick={() => router.push('/')}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md hover:shadow-lg"
+                onClick={onHome}
+                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 font-medium text-white shadow-md shadow-indigo-500/25 transition-all hover:from-indigo-700 hover:to-violet-700 hover:shadow-lg active:scale-[0.98]"
               >
-                <Home className="w-4 h-4" />
+                <Home className="h-4 w-4" />
                 Bosh sahifaga qaytish
               </button>
-              
               <button
-                onClick={() => window.location.reload()}
-                className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
+                onClick={onRefresh}
+                disabled={refreshing}
+                className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-6 py-3 font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
               >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                 Natijani yangilash
               </button>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-6">
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-emerald-600" />
+        {/* Maslahatlar */}
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-6">
+          <h3 className="mb-4 flex items-center font-bold text-slate-800">
+            <TrendingUp className="mr-2 h-5 w-5 text-emerald-600" />
             Natijangizni yaxshilash uchun maslahatlar
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-start">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
-                <span className="text-emerald-600 text-sm">1</span>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {tips.map((t, i) => (
+              <div key={t.title} className="flex items-start">
+                <div className="mr-3 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+                  {i + 1}
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800">{t.title}</p>
+                  <p className="text-sm text-slate-600">{t.text}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-gray-900">Muntazam mashq</p>
-                <p className="text-gray-600 text-sm">Har kuni 20 daqiqa mashq qiling</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
-                <span className="text-emerald-600 text-sm">2</span>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Xatolarni tahlil</p>
-                <p className="text-gray-600 text-sm">Noto'g'ri javoblaringizni qayta ko'rib chiqing</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
-                <span className="text-emerald-600 text-sm">3</span>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Qayta urinish</p>
-                <p className="text-gray-600 text-sm">Bir hafta o'tgach testni qayta ishlang</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </main>
@@ -413,17 +344,141 @@ function ResultContent() {
   );
 }
 
-// Asosiy export — Suspense bilan wraplanganFailed
+/* ───────────── Yuklash va xatolik holatlari ───────────── */
+function ResultContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const resultId = searchParams.get('resultId');
+
+  const [result, setResult] = useState<TestResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Tizimga kirmagan bo'lsa — ro'yxatdan o'tishga
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) router.push('/register');
+  }, [router]);
+
+  // Yuklash: setState faqat promise callback'larida
+  useEffect(() => {
+    if (!resultId) return;
+    let cancelled = false;
+    Promise.resolve()
+      .then(() => {
+        const token = localStorage.getItem('access_token');
+        if (!token) throw new Error('Tizimga kirmagansiz');
+        return api.get<TestResult>(`/test-result/${resultId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      })
+      .then((res) => {
+        if (cancelled) return;
+        setResult(res.data);
+        setError('');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+        setError(getErrorMessage(err, "Natijani yuklab bo'lmadi"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [resultId, reloadKey]);
+
+  const retry = () => {
+    setLoading(true);
+    setError('');
+    setReloadKey((k) => k + 1);
+  };
+
+  // resultId bo'lmasa, yuklanish kutilmaydi
+  const isLoading = loading && !!resultId;
+
+  if (isLoading && !result) {
+    return (
+      <div className={pageBg}>
+        <Header />
+        <main className="mx-auto max-w-6xl animate-pulse space-y-6 p-4 sm:p-6 lg:p-8">
+          <div className="h-56 rounded-3xl bg-slate-200" />
+          <div className="grid gap-5 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-36 rounded-2xl bg-slate-200" />
+            ))}
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-72 rounded-2xl bg-slate-200" />
+            <div className="h-72 rounded-2xl bg-slate-200" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!result) {
+    return (
+      <div className={pageBg}>
+        <Header />
+        <main className="flex min-h-[60vh] flex-col items-center justify-center p-8 text-center">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-red-100">
+            <XCircle className="h-10 w-10 text-red-600" />
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-slate-800">Natija topilmadi</h2>
+          <p className="mb-6 max-w-sm text-slate-500">
+            {error || 'Soralgan test natijasi mavjud emas'}
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {error && resultId && (
+              <button
+                onClick={retry}
+                className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Qayta urinish
+              </button>
+            )}
+            <button
+              onClick={() => router.push('/')}
+              className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 font-medium text-white shadow-md shadow-indigo-500/25 transition-all hover:from-indigo-700 hover:to-violet-700 hover:shadow-lg"
+            >
+              Bosh sahifaga qaytish
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <ResultView
+      result={result}
+      onHome={() => router.push('/')}
+      onRefresh={retry}
+      refreshing={isLoading}
+    />
+  );
+}
+
+// Asosiy export — useSearchParams uchun Suspense bilan o'ralgan
 export default function ResultPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-          <p className="text-gray-600 text-lg font-medium">Yuklanmoqda...</p>
+    <Suspense
+      fallback={
+        <div className={`${pageBg} flex items-center justify-center`}>
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+            <p className="text-lg font-medium text-slate-600">Yuklanmoqda...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ResultContent />
     </Suspense>
   );

@@ -14,8 +14,8 @@ export const useTest = () => {
       const data = await getTestsByLevel(levelId);
       setTests(data);
       return data;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch tests');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to fetch tests');
       throw err;
     } finally {
       setLoading(false);
@@ -27,8 +27,8 @@ export const useTest = () => {
     setError(null);
     try {
       return await getTest(id);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch test');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to fetch test');
       throw err;
     } finally {
       setLoading(false);
@@ -42,8 +42,8 @@ export const useTest = () => {
       const newTest = await createTest(data);
       setTests(prev => [...prev, newTest]);
       return newTest;
-    } catch (err: any) {
-      setError(err.message || 'Failed to create test');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to create test');
       throw err;
     } finally {
       setLoading(false);
@@ -57,8 +57,8 @@ export const useTest = () => {
       const updated = await updateTest(id, data);
       setTests(prev => prev.map(t => (t.id === id ? updated : t)));
       return updated;
-    } catch (err: any) {
-      setError(err.message || 'Failed to update test');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to update test');
       throw err;
     } finally {
       setLoading(false);
@@ -72,8 +72,8 @@ export const useTest = () => {
       const deleted = await deleteTest(id);
       setTests(prev => prev.filter(t => t.id !== id));
       return deleted;
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete test');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to delete test');
       throw err;
     } finally {
       setLoading(false);

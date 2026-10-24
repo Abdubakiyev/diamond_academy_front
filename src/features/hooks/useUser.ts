@@ -15,8 +15,8 @@ export const useUser = () => {
       const res = await getUsers();
       setUsers(res);
       return res;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch users');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to fetch users');
       throw err;
     } finally {
       setLoading(false);
@@ -30,8 +30,8 @@ export const useUser = () => {
       const res = await getProfile();
       setCurrentUser(res);
       return res;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch profile');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to fetch profile');
       throw err;
     } finally {
       setLoading(false);
@@ -46,8 +46,8 @@ export const useUser = () => {
       setUsers(prev => prev.map(u => (u.id === id ? updated : u)));
       if (currentUser?.id === id) setCurrentUser(updated);
       return updated;
-    } catch (err: any) {
-      setError(err.message || 'Failed to update user');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to update user');
       throw err;
     } finally {
       setLoading(false);
@@ -62,8 +62,8 @@ export const useUser = () => {
       setUsers(prev => prev.map(u => (u.id === id ? updated : u)));
       if (currentUser?.id === id) setCurrentUser(updated);
       return updated;
-    } catch (err: any) {
-      setError(err.message || 'Failed to toggle user');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to toggle user');
       throw err;
     } finally {
       setLoading(false);
