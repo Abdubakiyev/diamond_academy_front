@@ -36,9 +36,7 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   };
   const msg = e?.response?.data?.message;
   const text = Array.isArray(msg) ? msg.join(', ') : msg;
-  if (text) return text;
-  if (e?.response?.status === 404) return 'Soralgan test natijasi mavjud emas';
-  return e?.message || fallback;
+  return text || e?.message || fallback;
 };
 
 type Grade = {

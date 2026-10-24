@@ -36,9 +36,13 @@ const thisMonthStr = () => format(new Date(), 'yyyy-MM'); // local vaqt (UTC sil
 const monthKey = (d: string | Date) => new Date(d).toISOString().slice(0, 7);
 
 const getErrorMessage = (err: unknown, fallback: string) => {
-  const e = err as { response?: { data?: { message?: string | string[] } } };
+  const e = err as {
+    message?: string;
+    response?: { status?: number; data?: { message?: string | string[] } };
+  };
   const msg = e?.response?.data?.message;
-  return (Array.isArray(msg) ? msg.join(', ') : msg) || fallback;
+  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  return text || e?.message || fallback;
 };
 
 type ToastState = { type: 'success' | 'error'; text: string } | null;

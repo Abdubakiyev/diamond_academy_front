@@ -67,9 +67,13 @@ type Filter = 'all' | 'active' | 'inactive';
 type ToastState = { type: 'success' | 'error'; text: string } | null;
 
 const getErrorMessage = (err: unknown, fallback: string) => {
-  const e = err as { response?: { data?: { message?: string | string[] } } };
+  const e = err as {
+    message?: string;
+    response?: { status?: number; data?: { message?: string | string[] } };
+  };
   const msg = e?.response?.data?.message;
-  return (Array.isArray(msg) ? msg.join(', ') : msg) || fallback;
+  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  return text || e?.message || fallback;
 };
 
 /* ───────────── Sahifa ───────────── */

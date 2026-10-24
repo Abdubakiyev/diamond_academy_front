@@ -18,7 +18,7 @@ const formatTime = (seconds: number) => {
 const getErrorMessage = (err: unknown, fallback: string) => {
   const e = err as {
     message?: string;
-    response?: { data?: { message?: string | string[] } };
+    response?: { status?: number; data?: { message?: string | string[] } };
   };
   const msg = e?.response?.data?.message;
   const text = Array.isArray(msg) ? msg.join(', ') : msg;

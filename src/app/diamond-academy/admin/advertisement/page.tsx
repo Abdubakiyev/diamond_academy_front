@@ -29,7 +29,7 @@ import { Advertisement } from '@/features/types/advertisement';
 import AdminHeader from '@/components/AdminLayout';
 
 /* ───────────── Konstantalar va yordamchilar ───────────── */
-const API_URL = 'https://diamond-academy-back-guqx.onrender.com';
+const API_URL = 'https://diamondacademyback-production.up.railway.app';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 const mediaUrl = (path?: string | null) =>
@@ -45,9 +45,13 @@ const formatDate = (d: string | Date) =>
   });
 
 const getErrorMessage = (err: unknown, fallback: string) => {
-  const e = err as { response?: { data?: { message?: string | string[] } } };
+  const e = err as {
+    message?: string;
+    response?: { status?: number; data?: { message?: string | string[] } };
+  };
   const msg = e?.response?.data?.message;
-  return (Array.isArray(msg) ? msg.join(', ') : msg) || fallback;
+  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  return text || e?.message || fallback;
 };
 
 type Filter = 'all' | 'active' | 'inactive';

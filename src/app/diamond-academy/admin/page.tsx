@@ -50,7 +50,6 @@ const authHeaders = () => {
   if (!token) throw new Error('Token topilmadi, qayta kiring');
   return { Authorization: `Bearer ${token}` };
 };
-
 const getErrorMessage = (err: unknown, fallback: string) => {
   const e = err as {
     message?: string;
@@ -58,7 +57,7 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   };
   const msg = e?.response?.data?.message;
   const text = Array.isArray(msg) ? msg.join(', ') : msg;
-  return text || (e?.response?.status ? `${fallback} (${e.response.status})` : e?.message || fallback);
+  return text || e?.message || fallback;
 };
 
 const formatDate = (d: string | Date) =>

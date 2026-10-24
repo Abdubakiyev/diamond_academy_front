@@ -33,11 +33,11 @@ const formatPhone = (raw: string) => {
 const getErrorMessage = (err: unknown, fallback: string) => {
   const e = err as {
     message?: string;
-    response?: { data?: { message?: string | string[] } };
+    response?: { status?: number; data?: { message?: string | string[] } };
   };
   const msg = e?.response?.data?.message;
   const text = Array.isArray(msg) ? msg.join(', ') : msg;
-  return text || (err instanceof Error && !e.response && e.message ? e.message : fallback);
+  return text || e?.message || fallback;
 };
 
 /* ───────────── Sahifa ───────────── */
@@ -84,7 +84,7 @@ export default function Register() {
 
       // Rolga qarab yo'naltirish: ADMIN — to'g'ridan-to'g'ri panelga, USER — kod tekshiruviga
       setRedirectTo(res.user?.role === 'ADMIN' ? '/diamond-academy/admin' : '/access-check');
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(
         getErrorMessage(
           err,

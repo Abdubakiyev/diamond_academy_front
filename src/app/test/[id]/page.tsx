@@ -69,10 +69,8 @@ const getErrorMessage = (err: unknown, fallback: string) => {
     response?: { status?: number; data?: { message?: string | string[] } };
   };
   const msg = e?.response?.data?.message;
-  const text = Array.isArray(msg) ? msg.join(", ") : msg;
-  if (text) return text;
-  if (e?.response?.status === 404) return "Soralgan level mavjud emas yoki o'chirilgan";
-  return e?.message || fallback;
+  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  return text || e?.message || fallback;
 };
 
 const formatTime = (seconds: number) => {
@@ -199,7 +197,7 @@ export default function TestPage() {
       });
       clearSession(levelId);
       router.push(`/result?resultId=${res.data.id}`);
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error(err);
       sentRef.current = false;
       setSubmitting(false);
