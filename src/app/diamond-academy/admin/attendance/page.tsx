@@ -27,12 +27,18 @@ import {
 } from '@/features/hooks/useAttendance';
 import { apiClient } from '@/features/api/client';
 
+/* ───────────── Tiplar ───────────── */
+type AttendanceItem = {
+  student: { id: string; name: string; phone?: string | null };
+  present: boolean;
+};
+
+type ToastState = { type: 'success' | 'error'; text: string } | null;
+
 /* ───────────── Yordamchilar ───────────── */
 const money = (n: number) => new Intl.NumberFormat('uz-UZ').format(n);
 const todayStr = () => format(new Date(), 'yyyy-MM-dd');
 const thisMonthStr = () => format(new Date(), 'yyyy-MM'); // local vaqt (UTC siljishisiz)
-
-type ToastState = { type: 'success' | 'error'; text: string } | null;
 
 function Ring({ value }: { value: number }) {
   const r = 28;
@@ -130,7 +136,7 @@ export default function AttendancePaymentPage() {
   }, [dirty]);
 
   /* ── Hisob-kitoblar ── */
-  const list = students ?? [];
+  const list = useMemo(() => (students ?? []) as AttendanceItem[], [students]);
   const totalCount = list.length;
   const presentCount = list.filter(
     (item) => attendanceData[item.student.id] ?? item.present,
@@ -169,7 +175,8 @@ export default function AttendancePaymentPage() {
     resetSelections();
   };
 
-  const shiftDate = (days: number) => changeDate(format(addDays(parseISO(selectedDate), days), 'yyyy-MM-dd'));
+  const shiftDate = (days: number) =>
+    changeDate(format(addDays(parseISO(selectedDate), days), 'yyyy-MM-dd'));
 
   const setPresent = (studentId: string, value: boolean) => {
     setAttendanceData((prev) => ({ ...prev, [studentId]: value }));
@@ -197,7 +204,7 @@ export default function AttendancePaymentPage() {
   };
 
   const handleSaveAll = async () => {
-    if (!attGroupId || !students?.length || isSaving) return;
+    if (!attGroupId || list.length === 0 || isSaving) return;
     if (paymentAmount > 0 && !paymentMonth) {
       setToast({ type: 'error', text: "To'lov oyini tanlang" });
       return;
@@ -206,7 +213,7 @@ export default function AttendancePaymentPage() {
     setIsSaving(true);
     try {
       // 1. Davomat saqlash
-      const attendances = students.map((item) => ({
+      const attendances = list.map((item) => ({
         studentId: item.student.id,
         present: attendanceData[item.student.id] ?? item.present,
       }));
@@ -221,7 +228,7 @@ export default function AttendancePaymentPage() {
       let failed = 0;
       if (paymentAmount > 0) {
         const results = await Promise.allSettled(
-          students.map((item) =>
+          list.map((item) =>
             apiClient.post('/payment', {
               studentId: item.student.id,
               groupId: attGroupId,
