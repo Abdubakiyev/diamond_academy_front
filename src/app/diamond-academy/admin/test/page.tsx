@@ -1,11 +1,10 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import api from "@/features/api/auth";
-import { Test } from "@/features/types/test";
-import { Level } from "@/features/types/level";
-import AdminLayout from "@/components/AdminLayout";
-import { getErrorMessage } from "@/lib/getErrorMessage";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import api from '@/features/api/auth';
+import { Test } from '@/features/types/test';
+import { Level } from '@/features/types/level';
+import AdminLayout from '@/components/AdminLayout';
 import {
   Plus,
   Pencil,
@@ -19,14 +18,14 @@ import {
   BookOpen,
   Layers,
   ListChecks,
-} from "lucide-react";
+} from 'lucide-react';
 
 /* ───────────── Konstantalar ───────────── */
 const PAGE_SIZE = 10;
-const LETTERS = ["A", "B", "C", "D"] as const;
+const LETTERS = ['A', 'B', 'C', 'D'] as const;
 type OptionLetter = (typeof LETTERS)[number];
 type Option = { letter: OptionLetter; text: string };
-type ToastState = { type: "success" | "error"; text: string } | null;
+type ToastState = { type: 'success' | 'error'; text: string } | null;
 
 type FormState = {
   levelId: string;
@@ -37,47 +36,48 @@ type FormState = {
   D: string;
   correct: OptionLetter;
 };
-const emptyForm: FormState = {
-  levelId: "",
-  question: "",
-  A: "",
-  B: "",
-  C: "",
-  D: "",
-  correct: "A",
-};
+const emptyForm: FormState = { levelId: '', question: '', A: '', B: '', C: '', D: '', correct: 'A' };
 
 const levelNames: Record<string, string> = {
   BEGINNER: "Boshlang'ich",
-  ELEMENTARY: "Elementar",
+  ELEMENTARY: 'Elementar',
   INTERMEDIATE: "O'rta",
-  ADVANCED: "Yuqori",
+  ADVANCED: 'Yuqori',
 };
-const levelLabel = (type?: string) =>
-  type ? (levelNames[type] ?? type) : "Noma'lum daraja";
+const levelLabel = (type?: string) => (type ? (levelNames[type] ?? type) : "Noma'lum daraja");
 
 const authHeaders = () => {
-  const token = localStorage.getItem("access_token");
-  if (!token) throw new Error("Token topilmadi, qayta kiring");
+  const token = localStorage.getItem('access_token');
+  if (!token) throw new Error('Token topilmadi, qayta kiring');
   return { Authorization: `Bearer ${token}` };
+};
+
+const getErrorMessage = (err: unknown, fallback: string) => {
+  const e = err as {
+    message?: string;
+    response?: { data?: { message?: string | string[] } };
+  };
+  const msg = e?.response?.data?.message;
+  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  return text || e?.message || fallback;
 };
 
 const optionsOf = (t: Test): Option[] => {
   const all: Option[] = [
-    { letter: "A", text: t.optionA },
-    { letter: "B", text: t.optionB },
-    { letter: "C", text: t.optionC },
-    { letter: "D", text: t.optionD ?? "" },
+    { letter: 'A', text: t.optionA },
+    { letter: 'B', text: t.optionB },
+    { letter: 'C', text: t.optionC },
+    { letter: 'D', text: t.optionD ?? '' },
   ];
   return all.filter((o) => o.text);
 };
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10";
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10';
 const primaryBtn =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-700 hover:to-violet-700 active:scale-[0.98] disabled:opacity-60";
+  'inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-700 hover:to-violet-700 active:scale-[0.98] disabled:opacity-60';
 const ghostBtn =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50";
+  'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50';
 
 /* ───────────── Sahifa ───────────── */
 export default function AdminTests() {
@@ -85,18 +85,18 @@ export default function AdminTests() {
   const [levels, setLevels] = useState<Level[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadError, setLoadError] = useState("");
+  const [loadError, setLoadError] = useState('');
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [levelFilter, setLevelFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
   const filterKey = `${levelFilter}|${searchTerm}`;
-  const [pageState, setPageState] = useState({ key: "", limit: PAGE_SIZE });
+  const [pageState, setPageState] = useState({ key: '', limit: PAGE_SIZE });
   const limit = pageState.key === filterKey ? pageState.limit : PAGE_SIZE;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<Test | null>(null);
@@ -108,12 +108,12 @@ export default function AdminTests() {
     try {
       const headers = authHeaders();
       const [testsRes, levelsRes] = await Promise.all([
-        api.get<Test[]>("/test", { headers }),
-        api.get<Level[]>("/level", { headers }),
+        api.get<Test[]>('/test', { headers }),
+        api.get<Level[]>('/level', { headers }),
       ]);
       setTests(testsRes.data);
       setLevels(levelsRes.data);
-      setLoadError("");
+      setLoadError('');
     } catch (err) {
       console.error(err);
       setLoadError(getErrorMessage(err, "Ma'lumotlarni yuklab bo'lmadi"));
@@ -143,26 +143,26 @@ export default function AdminTests() {
   const closeForm = useCallback(() => {
     setModalOpen(false);
     setEditingId(null);
-    setFormError("");
+    setFormError('');
   }, []);
 
   const anyModal = modalOpen || !!deleteTarget;
   useEffect(() => {
     if (!anyModal) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (e.key !== 'Escape') return;
       if (deleteTarget) {
         if (!isDeleting) setDeleteTarget(null);
       } else if (!isSaving) {
         closeForm();
       }
     };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener('keydown', onKey);
     };
   }, [anyModal, deleteTarget, isDeleting, isSaving, closeForm]);
 
@@ -170,7 +170,7 @@ export default function AdminTests() {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...emptyForm, levelId: levelFilter });
-    setFormError("");
+    setFormError('');
     setModalOpen(true);
   };
 
@@ -182,19 +182,19 @@ export default function AdminTests() {
       A: t.optionA,
       B: t.optionB,
       C: t.optionC,
-      D: t.optionD ?? "",
+      D: t.optionD ?? '',
       correct: t.correct as OptionLetter,
     });
-    setFormError("");
+    setFormError('');
     setModalOpen(true);
   };
 
   const validate = (): string | null => {
-    if (!form.levelId) return "Darajani tanlang";
-    if (!form.question.trim()) return "Savol matnini kiriting";
+    if (!form.levelId) return 'Darajani tanlang';
+    if (!form.question.trim()) return 'Savol matnini kiriting';
     if (!form.A.trim() || !form.B.trim() || !form.C.trim())
       return "A, B va C variantlarini to'ldiring";
-    if (form.correct === "D" && !form.D.trim())
+    if (form.correct === 'D' && !form.D.trim())
       return "D variant bo'sh. Boshqa to'g'ri javobni tanlang yoki D ni to'ldiring";
     return null;
   };
@@ -215,25 +215,23 @@ export default function AdminTests() {
     };
 
     setIsSaving(true);
-    setFormError("");
+    setFormError('');
     try {
       if (editingId) {
         const { data } = await api.patch<Test>(`/test/${editingId}`, payload, {
           headers: authHeaders(),
         });
         setTests((prev) => prev.map((t) => (t.id === editingId ? data : t)));
-        setToast({ type: "success", text: "Savol yangilandi" });
+        setToast({ type: 'success', text: 'Savol yangilandi' });
       } else {
-        const { data } = await api.post<Test>("/test", payload, {
-          headers: authHeaders(),
-        });
+        const { data } = await api.post<Test>('/test', payload, { headers: authHeaders() });
         setTests((prev) => [data, ...prev]);
-        setToast({ type: "success", text: "Savol qo'shildi" });
+        setToast({ type: 'success', text: "Savol qo'shildi" });
       }
       closeForm();
     } catch (err) {
       console.error(err);
-      setFormError(getErrorMessage(err, "Saqlashda xatolik"));
+      setFormError(getErrorMessage(err, 'Saqlashda xatolik'));
     } finally {
       setIsSaving(false);
     }
@@ -245,24 +243,18 @@ export default function AdminTests() {
     try {
       await api.delete(`/test/${deleteTarget.id}`, { headers: authHeaders() });
       setTests((prev) => prev.filter((t) => t.id !== deleteTarget.id));
-      setToast({ type: "success", text: "Savol o'chirildi" });
+      setToast({ type: 'success', text: "Savol o'chirildi" });
       setDeleteTarget(null);
     } catch (err) {
       console.error(err);
-      setToast({
-        type: "error",
-        text: getErrorMessage(err, "O'chirishda xatolik"),
-      });
+      setToast({ type: 'error', text: getErrorMessage(err, "O'chirishda xatolik") });
     } finally {
       setIsDeleting(false);
     }
   };
 
   /* ── Hisob-kitoblar ── */
-  const levelById = useMemo(
-    () => new Map(levels.map((l) => [l.id, l])),
-    [levels],
-  );
+  const levelById = useMemo(() => new Map(levels.map((l) => [l.id, l])), [levels]);
   const countByLevel = useMemo(() => {
     const m = new Map<string, number>();
     tests.forEach((t) => m.set(t.levelId, (m.get(t.levelId) ?? 0) + 1));
@@ -275,13 +267,9 @@ export default function AdminTests() {
       tests.filter((t) => {
         if (levelFilter && t.levelId !== levelFilter) return false;
         if (!q) return true;
-        return [
-          t.question,
-          t.optionA,
-          t.optionB,
-          t.optionC,
-          t.optionD ?? "",
-        ].some((s) => s.toLowerCase().includes(q));
+        return [t.question, t.optionA, t.optionB, t.optionC, t.optionD ?? ''].some((s) =>
+          s.toLowerCase().includes(q),
+        );
       }),
     [tests, levelFilter, q],
   );
@@ -289,33 +277,14 @@ export default function AdminTests() {
   const withOptionD = tests.filter((t) => t.optionD).length;
 
   const stats = [
-    {
-      label: "Jami savollar",
-      value: tests.length,
-      icon: BookOpen,
-      tone: "bg-indigo-100 text-indigo-600",
-    },
-    {
-      label: "Darajalar",
-      value: levels.length,
-      icon: Layers,
-      tone: "bg-emerald-100 text-emerald-600",
-    },
-    {
-      label: "D variantli",
-      value: withOptionD,
-      icon: ListChecks,
-      tone: "bg-violet-100 text-violet-600",
-    },
+    { label: 'Jami savollar', value: tests.length, icon: BookOpen, tone: 'bg-indigo-100 text-indigo-600' },
+    { label: 'Darajalar', value: levels.length, icon: Layers, tone: 'bg-emerald-100 text-emerald-600' },
+    { label: 'D variantli', value: withOptionD, icon: ListChecks, tone: 'bg-violet-100 text-violet-600' },
   ];
 
   const pills = [
-    { id: "", label: "Barchasi", count: tests.length },
-    ...levels.map((l) => ({
-      id: l.id,
-      label: levelLabel(l.type),
-      count: countByLevel.get(l.id) ?? 0,
-    })),
+    { id: '', label: 'Barchasi', count: tests.length },
+    ...levels.map((l) => ({ id: l.id, label: levelLabel(l.type), count: countByLevel.get(l.id) ?? 0 })),
   ];
 
   return (
@@ -334,15 +303,8 @@ export default function AdminTests() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing || loading}
-              className={ghostBtn}
-            >
-              <RefreshCw
-                size={16}
-                className={refreshing ? "animate-spin" : ""}
-              />
+            <button onClick={handleRefresh} disabled={refreshing || loading} className={ghostBtn}>
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
               Yangilash
             </button>
             <button onClick={openCreate} className={primaryBtn}>
@@ -355,19 +317,12 @@ export default function AdminTests() {
         {/* Statistika */}
         <section className="mb-6 grid grid-cols-3 divide-x divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
           {stats.map((s) => (
-            <div
-              key={s.label}
-              className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5"
-            >
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${s.tone}`}
-              >
+            <div key={s.label} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${s.tone}`}>
                 <s.icon size={22} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">
-                  {loading ? "–" : s.value}
-                </p>
+                <p className="text-2xl font-bold text-slate-900">{loading ? '–' : s.value}</p>
                 <p className="text-sm text-slate-500">{s.label}</p>
               </div>
             </div>
@@ -390,7 +345,7 @@ export default function AdminTests() {
             />
             {searchTerm && (
               <button
-                onClick={() => setSearchTerm("")}
+                onClick={() => setSearchTerm('')}
                 aria-label="Tozalash"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600"
               >
@@ -402,20 +357,18 @@ export default function AdminTests() {
           <div className="flex flex-wrap gap-2">
             {pills.map((p) => (
               <button
-                key={p.id || "all"}
+                key={p.id || 'all'}
                 onClick={() => setLevelFilter(p.id)}
                 className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
                   levelFilter === p.id
-                    ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 {p.label}
                 <span
                   className={`rounded-full px-1.5 text-xs ${
-                    levelFilter === p.id
-                      ? "bg-white/25 text-white"
-                      : "bg-slate-100 text-slate-500"
+                    levelFilter === p.id ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
                   {p.count}
@@ -429,10 +382,7 @@ export default function AdminTests() {
         {loading ? (
           <div className="space-y-4">
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="animate-pulse rounded-2xl border border-slate-200/70 bg-white p-5"
-              >
+              <div key={i} className="animate-pulse rounded-2xl border border-slate-200/70 bg-white p-5">
                 <div className="mb-3 h-5 w-24 rounded-full bg-slate-200" />
                 <div className="mb-4 h-5 w-3/4 rounded bg-slate-200" />
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -448,19 +398,10 @@ export default function AdminTests() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
               <XCircle className="text-red-500" size={28} />
             </div>
-            <p className="mb-1 text-lg font-semibold text-slate-800">
-              Yuklab bo&apos;lmadi
-            </p>
+            <p className="mb-1 text-lg font-semibold text-slate-800">Yuklab bo&apos;lmadi</p>
             <p className="mb-5 text-sm text-red-600">{loadError}</p>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className={primaryBtn}
-            >
-              <RefreshCw
-                size={16}
-                className={refreshing ? "animate-spin" : ""}
-              />
+            <button onClick={handleRefresh} disabled={refreshing} className={primaryBtn}>
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
               Qayta urinish
             </button>
           </div>
@@ -469,12 +410,8 @@ export default function AdminTests() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
               <BookOpen className="text-indigo-400" size={32} />
             </div>
-            <p className="mb-1 text-lg font-semibold text-slate-700">
-              Hali savollar yo&apos;q
-            </p>
-            <p className="mb-6 text-sm text-slate-500">
-              Birinchi test savolini qo&apos;shing
-            </p>
+            <p className="mb-1 text-lg font-semibold text-slate-700">Hali savollar yo&apos;q</p>
+            <p className="mb-6 text-sm text-slate-500">Birinchi test savolini qo&apos;shing</p>
             <button onClick={openCreate} className={primaryBtn}>
               <Plus size={18} />
               Yangi savol
@@ -486,8 +423,8 @@ export default function AdminTests() {
             <p className="font-medium text-slate-600">Hech narsa topilmadi</p>
             <button
               onClick={() => {
-                setSearchTerm("");
-                setLevelFilter("");
+                setSearchTerm('');
+                setLevelFilter('');
               }}
               className="mt-3 text-sm font-medium text-indigo-600 hover:underline"
             >
@@ -541,22 +478,18 @@ export default function AdminTests() {
                             key={o.letter}
                             className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 text-sm ${
                               isCorrect
-                                ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                                : "border-slate-200 text-slate-600"
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                                : 'border-slate-200 text-slate-600'
                             }`}
                           >
                             <span
                               className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-bold ${
-                                isCorrect
-                                  ? "bg-emerald-500 text-white"
-                                  : "bg-slate-100 text-slate-500"
+                                isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'
                               }`}
                             >
                               {o.letter}
                             </span>
-                            <span className="min-w-0 flex-1 break-words pt-0.5">
-                              {o.text}
-                            </span>
+                            <span className="min-w-0 flex-1 break-words pt-0.5">{o.text}</span>
                             {isCorrect && (
                               <Check
                                 size={16}
@@ -575,20 +508,15 @@ export default function AdminTests() {
 
             <div className="mt-5 flex items-center justify-between">
               <p className="text-sm text-slate-500">
-                <span className="font-semibold text-slate-700">
-                  {visible.length}
-                </span>{" "}
-                / {filtered.length} ta savol ko&apos;rsatilmoqda
+                <span className="font-semibold text-slate-700">{visible.length}</span> /{' '}
+                {filtered.length} ta savol ko&apos;rsatilmoqda
               </p>
               {visible.length < filtered.length && (
                 <button
-                  onClick={() =>
-                    setPageState({ key: filterKey, limit: limit + PAGE_SIZE })
-                  }
+                  onClick={() => setPageState({ key: filterKey, limit: limit + PAGE_SIZE })}
                   className={ghostBtn}
                 >
-                  Yana {Math.min(PAGE_SIZE, filtered.length - visible.length)}{" "}
-                  ta ko&apos;rsatish
+                  Yana {Math.min(PAGE_SIZE, filtered.length - visible.length)} ta ko&apos;rsatish
                 </button>
               )}
             </div>
@@ -612,11 +540,8 @@ export default function AdminTests() {
             className="my-8 w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h2
-                id="test-form-title"
-                className="text-lg font-bold text-slate-900"
-              >
-                {editingId ? "Savolni tahrirlash" : "Yangi savol qo'shish"}
+              <h2 id="test-form-title" className="text-lg font-bold text-slate-900">
+                {editingId ? 'Savolni tahrirlash' : "Yangi savol qo'shish"}
               </h2>
               <button
                 type="button"
@@ -631,18 +556,13 @@ export default function AdminTests() {
 
             <div className="space-y-5 px-6 py-5">
               <div>
-                <label
-                  htmlFor="level"
-                  className="mb-1.5 block text-sm font-medium text-slate-700"
-                >
+                <label htmlFor="level" className="mb-1.5 block text-sm font-medium text-slate-700">
                   Daraja *
                 </label>
                 <select
                   id="level"
                   value={form.levelId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, levelId: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, levelId: e.target.value }))}
                   className={inputCls}
                 >
                   <option value="">Darajani tanlang</option>
@@ -655,10 +575,7 @@ export default function AdminTests() {
               </div>
 
               <div>
-                <label
-                  htmlFor="question"
-                  className="mb-1.5 block text-sm font-medium text-slate-700"
-                >
+                <label htmlFor="question" className="mb-1.5 block text-sm font-medium text-slate-700">
                   Savol *
                 </label>
                 <textarea
@@ -666,9 +583,7 @@ export default function AdminTests() {
                   rows={3}
                   autoFocus
                   value={form.question}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, question: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
                   placeholder="Savol matnini kiriting"
                   className={`${inputCls} resize-none`}
                 />
@@ -676,18 +591,12 @@ export default function AdminTests() {
 
               <div>
                 <div className="mb-2 flex items-baseline justify-between gap-3">
-                  <span className="text-sm font-medium text-slate-700">
-                    Javob variantlari *
-                  </span>
+                  <span className="text-sm font-medium text-slate-700">Javob variantlari *</span>
                   <span className="text-xs text-slate-400">
                     To&apos;g&apos;ri javobni harf tugmasi bilan belgilang
                   </span>
                 </div>
-                <div
-                  role="radiogroup"
-                  aria-label="To'g'ri javob"
-                  className="space-y-2.5"
-                >
+                <div role="radiogroup" aria-label="To'g'ri javob" className="space-y-2.5">
                   {LETTERS.map((letter) => {
                     const selected = form.correct === letter;
                     return (
@@ -697,13 +606,11 @@ export default function AdminTests() {
                           role="radio"
                           aria-checked={selected}
                           aria-label={`${letter} to'g'ri javob`}
-                          onClick={() =>
-                            setForm((f) => ({ ...f, correct: letter }))
-                          }
+                          onClick={() => setForm((f) => ({ ...f, correct: letter }))}
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                             selected
-                              ? "bg-emerald-500 text-white shadow-sm"
-                              : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                              ? 'bg-emerald-500 text-white shadow-sm'
+                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                           }`}
                         >
                           {letter}
@@ -711,15 +618,9 @@ export default function AdminTests() {
                         <input
                           type="text"
                           value={form[letter]}
-                          onChange={(e) =>
-                            setForm((f) => ({ ...f, [letter]: e.target.value }))
-                          }
-                          placeholder={
-                            letter === "D"
-                              ? "D variant (ixtiyoriy)"
-                              : `${letter} variant`
-                          }
-                          className={`${inputCls} ${selected ? "!border-emerald-300 !bg-emerald-50/50" : ""}`}
+                          onChange={(e) => setForm((f) => ({ ...f, [letter]: e.target.value }))}
+                          placeholder={letter === 'D' ? 'D variant (ixtiyoriy)' : `${letter} variant`}
+                          className={`${inputCls} ${selected ? '!border-emerald-300 !bg-emerald-50/50' : ''}`}
                         />
                       </div>
                     );
@@ -739,25 +640,12 @@ export default function AdminTests() {
             </div>
 
             <div className="flex gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
-              <button
-                type="button"
-                onClick={closeForm}
-                disabled={isSaving}
-                className={`${ghostBtn} flex-1`}
-              >
+              <button type="button" onClick={closeForm} disabled={isSaving} className={`${ghostBtn} flex-1`}>
                 Bekor qilish
               </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className={`${primaryBtn} flex-1`}
-              >
+              <button type="submit" disabled={isSaving} className={`${primaryBtn} flex-1`}>
                 {isSaving && <RefreshCw size={16} className="animate-spin" />}
-                {isSaving
-                  ? "Saqlanmoqda..."
-                  : editingId
-                    ? "Yangilash"
-                    : "Qo'shish"}
+                {isSaving ? 'Saqlanmoqda...' : editingId ? 'Yangilash' : "Qo'shish"}
               </button>
             </div>
           </form>
@@ -769,8 +657,7 @@ export default function AdminTests() {
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget && !isDeleting)
-              setDeleteTarget(null);
+            if (e.target === e.currentTarget && !isDeleting) setDeleteTarget(null);
           }}
         >
           <div
@@ -781,13 +668,9 @@ export default function AdminTests() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
               <Trash2 className="text-red-600" size={26} />
             </div>
-            <h3 className="mb-1 text-lg font-bold text-slate-900">
-              Savolni o&apos;chirasizmi?
-            </h3>
+            <h3 className="mb-1 text-lg font-bold text-slate-900">Savolni o&apos;chirasizmi?</h3>
             <p className="mb-6 text-sm text-slate-500">
-              <span className="line-clamp-3 font-medium text-slate-700">
-                {deleteTarget.question}
-              </span>
+              <span className="line-clamp-3 font-medium text-slate-700">{deleteTarget.question}</span>
               Bu amalni qaytarib bo&apos;lmaydi.
             </p>
             <div className="flex gap-3">
@@ -816,10 +699,10 @@ export default function AdminTests() {
         <div
           role="status"
           className={`fixed bottom-5 right-5 z-[120] flex max-w-sm items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-xl ${
-            toast.type === "success" ? "bg-slate-900" : "bg-red-600"
+            toast.type === 'success' ? 'bg-slate-900' : 'bg-red-600'
           }`}
         >
-          {toast.type === "success" ? (
+          {toast.type === 'success' ? (
             <CheckCircle size={18} className="shrink-0 text-emerald-400" />
           ) : (
             <XCircle size={18} className="shrink-0" />
