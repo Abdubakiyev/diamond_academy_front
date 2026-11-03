@@ -43,7 +43,7 @@ export default function AccessCheckPage() {
       return;
     }
     if (enabled === 'false') {
-      router.push('/');
+      router.push('/home');
     }
   }, [router]);
 
