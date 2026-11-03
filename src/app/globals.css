@@ -63,4 +63,46 @@ button:not(:disabled),
   .modal-panel-in {
     animation: none;
   }
+} 
+/* ===== src/app/globals.css OXIRIGA qo'shing (faqat animatsiya keyframe'lari) ===== */
+
+@keyframes dh-word {
+  from { opacity: 0; transform: translateY(28px) rotateX(-40deg); filter: blur(8px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes dh-pop {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes dh-flow  { to { background-position: -200% 0; } }
+@keyframes dh-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(60px, 40px) scale(1.15); }
+}
+@keyframes dh-twinkle {
+  0%, 100% { opacity: 0; transform: scale(.5); }
+  50%      { opacity: 1; transform: scale(1.4); }
+}
+@keyframes dh-float {
+  0%, 100% { transform: translateY(-10px); }
+  50%      { transform: translateY(14px); }
+}
+@keyframes dh-spin {
+  0%, 100% { transform: rotateY(-14deg); }
+  50%      { transform: rotateY(14deg); }
+}
+@keyframes dh-sweep {
+  0%       { transform: translateX(0); }
+  55%, 100% { transform: translateX(330px); }
+}
+@keyframes dh-rot   { to { transform: rotate(360deg); } }
+@keyframes dh-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes dh-marq  { to { transform: translateX(-50%); } }
+@keyframes dh-fill  { to { width: var(--w); } }
+@keyframes dh-pulse {
+  0%   { opacity: .6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.18); }
 }

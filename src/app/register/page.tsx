@@ -306,11 +306,11 @@ export default function Register() {
 
                 <p className="mt-6 text-center text-sm text-slate-500">
                   Ro&apos;yxatdan o&apos;tish orqali siz{' '}
-                  <Link href="/terms" className="font-medium text-indigo-600 hover:text-indigo-700">
+                  <Link href="/" className="font-medium text-indigo-600 hover:text-indigo-700">
                     Foydalanish shartlari
                   </Link>{' '}
                   va{' '}
-                  <Link href="/privacy" className="font-medium text-indigo-600 hover:text-indigo-700">
+                  <Link href="/" className="font-medium text-indigo-600 hover:text-indigo-700">
                     Maxfiylik siyosati
                   </Link>
                   ga rozilik bildirasiz

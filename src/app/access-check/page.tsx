@@ -39,7 +39,7 @@ export default function AccessCheckPage() {
       return;
     }
     if (verified === 'true') {
-      router.push('/diamond-academy');
+      router.push('/diamond-academy/home');
       return;
     }
     if (enabled === 'false') {
