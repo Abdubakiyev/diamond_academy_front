@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 /* ───────────── Yordamchilar (mantiq o'zgarmagan) ───────────── */
-const API_URL = 'https://diamond-academy-back-guqx.onrender.com';
+const API_URL = 'https://diamondacademyback-production.up.railway.app';
 
 const mediaUrl = (path: string) => (path.startsWith('http') ? path : `${API_URL}${path}`);
 const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
