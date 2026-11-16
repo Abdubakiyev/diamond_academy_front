@@ -4,7 +4,7 @@ export type Skill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING';
 
 export type ExamType = 'FULL_MULTILEVEL' | 'CUSTOM';
 
-export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'GRADING' | 'COMPLETED';
+export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'GRADING' | 'COMPLETED' | 'EXPIRED';
 
 export interface Paginated<T> {
   items: T[];
