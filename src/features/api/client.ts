@@ -1,87 +1,69 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import { API_URL, LOGIN_PATH } from '../../lib/config';
+import { tokenStore } from '../../lib/token';
 
-// Base URL - environment variable yoki default
-const BASE_URL = 'https://diamondacademyback-production.up.railway.app';
+export const BASE_URL = API_URL;
 
-// Axios instance yaratish
 export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor - har bir requestga token qo'shish
-apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    // LocalStorage dan token olish
-    const token = localStorage.getItem('access_token');
-    
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = tokenStore.getAccess();
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// Response interceptor - xatolarni boshqarish
+type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
+
+/** Bir vaqtda kelgan ko'p 401 uchun refresh faqat bir marta bajariladi */
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = tokenStore.getRefresh();
+  if (!refreshToken) throw new Error('NO_REFRESH_TOKEN');
+
+  const { data } = await axios.post<{ accessToken: string; refreshToken?: string }>(
+    `${BASE_URL}/auth/refresh`,
+    { refreshToken },
+  );
+  tokenStore.set(data.accessToken, data.refreshToken);
+  return data.accessToken;
+}
+
+function redirectToLogin() {
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname !== LOGIN_PATH) window.location.href = LOGIN_PATH;
+}
+
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
+  (response) => response,
+  async (error: AxiosError) => {
+    const original = error.config as RetryConfig | undefined;
+    const status = error.response?.status;
+    const isAuthCall = !!original?.url?.includes('/auth/');
 
-    // 401 Unauthorized - token muddati tugagan
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
+    if (status === 401 && original && !original._retry && !isAuthCall) {
+      original._retry = true;
       try {
-        // Refresh token bilan yangi access token olish
-        const refreshToken = localStorage.getItem('refreshToken');
-        
-        if (refreshToken) {
-          const { data } = await axios.post(`${BASE_URL}/auth/refresh`, {
-            refreshToken,
-          });
-
-          // Yangi tokenni saqlash
-          localStorage.setItem('accessToken', data.accessToken);
-
-          // Original requestni qayta yuborish
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-          return apiClient(originalRequest);
-        }
-      } catch (refreshError) {
-        // Refresh token ham ishlamasa, logout qilish
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
+        refreshPromise ??= refreshAccessToken().finally(() => {
+          refreshPromise = null;
+        });
+        const token = await refreshPromise;
+        original.headers.Authorization = `Bearer ${token}`;
+        return apiClient(original);
+      } catch {
+        tokenStore.clear();
+        redirectToLogin();
+        return Promise.reject(error);
       }
     }
 
-    // 403 Forbidden - ruxsat yo'q
-    if (error.response?.status === 403) {
-      console.error('Ruxsat yo\'q!');
-    }
-
-    // 404 Not Found
-    if (error.response?.status === 404) {
-      console.error('Topilmadi!');
-    }
-
-    // 500 Server Error
-    if (error.response?.status === 500) {
-      console.error('Server xatosi!');
-    }
-
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

@@ -1,38 +1,30 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
+import apiClient from './client';
 
-const API_URL = 'https://diamondacademyback-production.up.railway.app';
+/** Eski importlar (`import { api } from './api'`) ishlashda davom etadi: endi bitta umumiy klient */
+export const api = apiClient;
 
-export const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Token qo'shish
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      window.location.href = '/register';
-    }
-    return Promise.reject(error);
-  }
-);
-
+/** Backend xatosidan o'qiladigan matn chiqaradi (NestJS `message` string yoki massiv bo'lishi mumkin) */
 export const handleApiError = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.message || error.message;
+    const message = error.response?.data?.message;
+    if (Array.isArray(message)) return message.join(', ');
+    if (typeof message === 'string' && message) return message;
+    if (!error.response) return 'Server bilan aloqa yo‘q. Internetni tekshiring';
+    return error.message;
   }
+  if (error instanceof Error && error.message) return error.message;
   return 'Xatolik yuz berdi';
+};
+
+/** HTTP status kodini olish (402 = to'lov kerak, 409 = holat mos emas va h.k.) */
+export const getErrorStatus = (error: unknown): number | undefined =>
+  axios.isAxiosError(error) ? error.response?.status : undefined;
+/** Backend 400 javobidagi `problems` massivi (imtihonni e'lon qilishda) */
+export const getErrorProblems = (error: unknown): string[] => {
+  if (axios.isAxiosError(error)) {
+    const p = error.response?.data?.problems;
+    if (Array.isArray(p)) return p.filter((x): x is string => typeof x === 'string');
+  }
+  return [];
 };

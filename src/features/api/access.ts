@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { AccessCode, AccessCodeResponse, CheckAccessDto, CheckAccessResponse } from '../types/access';
 
-const BASE_URL = 'https://diamondacademyback-production.up.railway.app/access';
+const BASE_URL = 'http://localhost:3000/access';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {

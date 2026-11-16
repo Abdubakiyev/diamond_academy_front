@@ -87,3 +87,44 @@ button:not(:disabled),
   0%   { opacity: .6; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.18); }
 }
+/* ───── Diamond Academy: auth va umumiy animatsiyalar ───── */
+@keyframes da-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes da-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes da-shimmer {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+@keyframes da-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+.da-float { animation: da-float 7s ease-in-out infinite; }
+.da-float-slow { animation: da-float 10s ease-in-out infinite reverse; }
+.da-blob { animation: da-blob 16s ease-in-out infinite; }
+.da-fade-up { animation: da-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.da-delay-1 { animation-delay: 0.08s; }
+.da-delay-2 { animation-delay: 0.16s; }
+.da-delay-3 { animation-delay: 0.24s; }
+.da-delay-4 { animation-delay: 0.32s; }
+
+.da-shimmer { position: relative; overflow: hidden; }
+.da-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  animation: da-shimmer 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .da-float, .da-float-slow, .da-blob, .da-fade-up, .da-shimmer::after { animation: none; }
+}

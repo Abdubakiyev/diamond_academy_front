@@ -29,7 +29,7 @@ import { Advertisement } from '@/features/types/advertisement';
 import AdminHeader from '@/components/AdminLayout';
 
 /* ───────────── Konstantalar va yordamchilar ───────────── */
-const API_URL = 'https://diamondacademyback-production.up.railway.app';
+const API_URL = 'http://localhost:3000';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 const mediaUrl = (path?: string | null) =>

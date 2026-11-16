@@ -1,38 +1,22 @@
-import axios from 'axios';
-import { RegisterDto, AuthResponse } from '../types/auth';
+import apiClient from './client';
+import { tokenStore } from '../../lib/token';
+import type { AuthResponse, MeUser, RegisterDto } from '../types/auth';
 
-// Axios instance
-const api = axios.create({
-  baseURL: 'https://diamondacademyback-production.up.railway.app', // NestJS backend URL
-  headers: { 'Content-Type': 'application/json' },
-});
-
-// Register function
+/** Kirish yoki ro'yxatdan o'tish (backend bitta endpoint). Tokenlar saqlanadi. */
 export const register = async (data: RegisterDto): Promise<AuthResponse> => {
-  const response = await api.post<AuthResponse>('/auth/register', data);
-  // Tokenni localStorage da saqlash
-  localStorage.setItem('access_token', response.data.accessToken);
-  return response.data;
+  const res = await apiClient.post<AuthResponse>('/auth/register', data);
+  tokenStore.set(res.data.accessToken, res.data.refreshToken);
+  return res.data;
 };
 
-// Get current user profile
-export const getProfile = async (): Promise<AuthResponse['user']> => {
-  const token = localStorage.getItem('access_token');
-  if (!token) throw new Error('No token found');
-
-  const response = await api.get<AuthResponse['user']>('/user/me', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const getProfile = async (): Promise<MeUser> => {
+  const res = await apiClient.get<MeUser>('/user/me');
+  return res.data;
 };
 
-// JWT token bilan boshqa endpointlarni chaqirish uchun helper
 export const setAuthToken = (token: string | null) => {
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  } else {
-    delete api.defaults.headers.common['Authorization'];
-  }
+  if (token) tokenStore.set(token);
+  else tokenStore.clear();
 };
 
-export default api;
+export default apiClient;

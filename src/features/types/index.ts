@@ -217,3 +217,13 @@ export interface ApiResponse<T> {
   error?: string;
   message?: string;
 }
+export * from './common';
+export * from './storage';
+export * from './exam-attempt';
+export * from './course';
+export * from './lesson';
+export * from './assignment';
+export * from './exam';
+export * from './question';
+export * from './scoring';
+export * from './exam-payment';

@@ -10,6 +10,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 
@@ -52,6 +53,7 @@ interface ModalShellProps {
   submitDisabled?: boolean;
   isPending?: boolean;
   errorMessage?: string | null;
+  maxWidth?: string;
   children: ReactNode;
 }
 
@@ -67,6 +69,7 @@ export function ModalShell({
   submitDisabled = false,
   isPending = false,
   errorMessage,
+  maxWidth = 'max-w-md',
   children,
 }: ModalShellProps) {
   const t = themes[theme];
@@ -109,7 +112,7 @@ export function ModalShell({
         {/* Modal */}
         <form
           onSubmit={handleSubmit}
-          className="modal-panel-in relative flex max-h-[calc(100vh-2rem)] flex-col bg-white rounded-2xl shadow-2xl shadow-black/30 ring-1 ring-black/5 w-full max-w-md mx-4 overflow-hidden"
+          className={`modal-panel-in relative flex max-h-[calc(100vh-2rem)] flex-col bg-white rounded-2xl shadow-2xl shadow-black/30 ring-1 ring-black/5 w-full ${maxWidth} mx-4 overflow-hidden`}
         >
           {/* Yuqori rangli chiziq */}
           <div className={`h-1 shrink-0 bg-gradient-to-r ${t.bar}`} />
@@ -249,6 +252,20 @@ export function SelectInput({
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
     </div>
+  );
+}
+
+export function TextAreaInput({
+  className = '',
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const t = useContext(ThemeContext);
+  return (
+    <textarea
+      {...props}
+      className={`w-full resize-y px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white shadow-sm
+        hover:border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all placeholder:text-gray-400 ${t.field} ${className}`}
+    />
   );
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { format, addDays, parseISO } from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarCheck,
   ChevronLeft,
@@ -31,6 +31,14 @@ import { apiClient } from '@/features/api/client';
 type AttendanceItem = {
   student: { id: string; name: string; phone?: string | null };
   present: boolean;
+};
+
+type MonthData = {
+  fee: number | null; // guruhning amaldagi summasi
+  students: {
+    id: string;
+    payment: { status: PaymentStatus; amount: string | number } | null;
+  }[];
 };
 
 type ToastState = { type: 'success' | 'error'; text: string } | null;
@@ -102,8 +110,11 @@ export default function AttendancePaymentPage() {
   const [attGroupId, setAttGroupId] = useState('');
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [attendanceData, setAttendanceData] = useState<Record<string, boolean>>({});
-  const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
+  // Faqat foydalanuvchi o'zgartirgan to'lov belgilari (qolganlari serverdan olinadi)
+  const [paidOverrides, setPaidOverrides] = useState<Record<string, boolean>>({});
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  // Foydalanuvchi summani o'zi yozgan bo'lsa, server qiymati uni bosib ketmaydi
+  const [amountTouched, setAmountTouched] = useState(false);
   const [paymentMonth, setPaymentMonth] = useState(thisMonthStr());
   const [isSaving, setIsSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -116,6 +127,38 @@ export default function AttendancePaymentPage() {
     selectedDate,
   );
   const createAttendance = useCreateAttendanceBulk();
+
+  /* Tanlangan guruh va oy bo'yicha serverdagi to'lovlar va guruh summasi */
+  const { data: monthData } = useQuery<MonthData>({
+    queryKey: ['payments', 'group-month', attGroupId, paymentMonth],
+    enabled: !!attGroupId && !!paymentMonth,
+    queryFn: async () =>
+      (
+        await apiClient.get(`/payment/group/${attGroupId}/month`, {
+          params: { month: paymentMonth },
+        })
+      ).data,
+  });
+
+  // Serverda allaqachon to'langan studentlar
+  const serverPaid = useMemo(
+    () =>
+      new Set(
+        (monthData?.students ?? [])
+          .filter((s) => s.payment?.status === PaymentStatus.PAID)
+          .map((s) => s.id),
+      ),
+    [monthData],
+  );
+
+  // Summa: foydalanuvchi o'zgartirmagan bo'lsa guruh summasi (fee) qo'yiladi
+  useEffect(() => {
+    if (!monthData || amountTouched) return;
+    const first = monthData.students.find((s) => s.payment)?.payment;
+    setPaymentAmount(monthData.fee ?? (first ? Number(first.amount) : 0));
+  }, [monthData, amountTouched]);
+
+  const isPaidNow = (id: string) => paidOverrides[id] ?? serverPaid.has(id);
 
   /* Toast avtomatik yopiladi */
   useEffect(() => {
@@ -143,7 +186,8 @@ export default function AttendancePaymentPage() {
   ).length;
   const absentCount = totalCount - presentCount;
   const attendanceRate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
-  const collected = paidIds.size * paymentAmount;
+  const paidCount = list.filter((item) => isPaidNow(item.student.id)).length;
+  const collected = paidCount * paymentAmount;
 
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -158,13 +202,15 @@ export default function AttendancePaymentPage() {
   /* ── Amallar ── */
   const resetSelections = () => {
     setAttendanceData({});
-    setPaidIds(new Set());
+    setPaidOverrides({});
     setDirty(false);
   };
 
   const changeGroup = (id: string) => {
     setAttGroupId(id);
     setSearch('');
+    setPaymentAmount(0);
+    setAmountTouched(false);
     resetSelections();
   };
 
@@ -189,25 +235,33 @@ export default function AttendancePaymentPage() {
   };
 
   const handleTogglePayment = (studentId: string) => {
-    setPaidIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(studentId)) next.delete(studentId);
-      else next.add(studentId);
-      return next;
-    });
+    setPaidOverrides((prev) => ({ ...prev, [studentId]: !isPaidNow(studentId) }));
     setDirty(true);
   };
 
   const setAllPaid = (value: boolean) => {
-    setPaidIds(value ? new Set(list.map((item) => item.student.id)) : new Set());
+    setPaidOverrides(Object.fromEntries(list.map((item) => [item.student.id, value])));
     setDirty(true);
   };
 
   const handleSaveAll = async () => {
     if (!attGroupId || list.length === 0 || isSaving) return;
-    if (paymentAmount > 0 && !paymentMonth) {
-      setToast({ type: 'error', text: "To'lov oyini tanlang" });
-      return;
+
+    // Faqat serverdagi holatdan farq qiladigan studentlar
+    const changed = list.filter((item) => {
+      const id = item.student.id;
+      return paidOverrides[id] !== undefined && paidOverrides[id] !== serverPaid.has(id);
+    });
+
+    if (changed.length > 0) {
+      if (!paymentMonth) {
+        setToast({ type: 'error', text: "To'lov oyini tanlang" });
+        return;
+      }
+      if (paymentAmount <= 0) {
+        setToast({ type: 'error', text: "To'lov summasini kiriting" });
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -224,24 +278,39 @@ export default function AttendancePaymentPage() {
         );
       });
 
-      // 2. To'lov saqlash (agar summa kiritilgan bo'lsa)
+      // 2. To'lov saqlash: har bir o'zgargan student uchun (yaratadi yoki yangilaydi)
       let failed = 0;
-      if (paymentAmount > 0) {
+      if (changed.length > 0) {
         const results = await Promise.allSettled(
-          list.map((item) =>
-            apiClient.post('/payment', {
+          changed.map((item) =>
+            apiClient.put('/payment/student', {
               studentId: item.student.id,
               groupId: attGroupId,
+              month: paymentMonth, // "2026-11"
               amount: paymentAmount,
-              status: paidIds.has(item.student.id) ? PaymentStatus.PAID : PaymentStatus.PENDING,
-              month: new Date(paymentMonth + '-01'),
-              paidAt: paidIds.has(item.student.id) ? new Date() : undefined,
+              status: paidOverrides[item.student.id]
+                ? PaymentStatus.PAID
+                : PaymentStatus.PENDING,
             }),
           ),
         );
         failed = results.filter((r) => r.status === 'rejected').length;
-        queryClient.invalidateQueries({ queryKey: ['payments'] });
       }
+
+      // 3. Summa o'zgargan bo'lsa guruh uchun default sifatida saqlanadi
+      if (paymentAmount > 0 && paymentAmount !== (monthData?.fee ?? null)) {
+        try {
+          await apiClient.put(`/payment/group/${attGroupId}/fee`, {
+            month: paymentMonth,
+            amount: paymentAmount,
+          });
+        } catch (e) {
+          console.error('Summani saqlashda xato:', e);
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-stats'] });
 
       if (failed > 0) {
         setToast({
@@ -251,11 +320,12 @@ export default function AttendancePaymentPage() {
       } else {
         setToast({
           type: 'success',
-          text: paymentAmount > 0 ? "Davomat va to'lovlar saqlandi" : 'Davomat saqlandi',
+          text: changed.length > 0 ? "Davomat va to'lovlar saqlandi" : 'Davomat saqlandi',
         });
-        // Qayta bosilganda to'lovlar takrorlanib ketmasligi uchun tozalaymiz
-        setPaidIds(new Set());
-        setPaymentAmount(0);
+        // Server ma'lumoti yangilangach, switch'lar va summa to'g'ri holatni ko'rsatadi
+        await queryClient.invalidateQueries({ queryKey: ['payments', 'group-month'] });
+        setPaidOverrides({});
+        setAmountTouched(false);
         setDirty(false);
       }
     } catch (e) {
@@ -267,7 +337,7 @@ export default function AttendancePaymentPage() {
   };
 
   const selectedGroupName = attGroups?.find((g) => g.id === attGroupId)?.name;
-  const paymentDisabled = paymentAmount <= 0;
+  const hasOverrides = Object.keys(paidOverrides).length > 0;
 
   const stats = [
     { label: 'Jami', value: totalCount, icon: Users, box: 'bg-indigo-100 text-indigo-600', num: 'text-indigo-600' },
@@ -376,13 +446,15 @@ export default function AttendancePaymentPage() {
                       value={paymentAmount || ''}
                       onChange={(e) => {
                         setPaymentAmount(Number(e.target.value));
+                        setAmountTouched(true);
                         setDirty(true);
                       }}
                       className={`${inputCls} pl-11`}
                     />
                   </div>
                   <p className="mt-1.5 text-xs text-slate-400">
-                    Summa kiritilmasa, to&apos;lovlar saqlanmaydi
+                    Summa guruh uchun eslab qolinadi. Keyingi safar o&apos;zi chiqadi, xohlasangiz
+                    o&apos;zgartiring
                   </p>
                 </div>
                 <div className="sm:w-72">
@@ -392,7 +464,9 @@ export default function AttendancePaymentPage() {
                     value={paymentMonth}
                     onChange={(e) => {
                       setPaymentMonth(e.target.value);
-                      setDirty(true);
+                      setPaidOverrides({});
+                      setPaymentAmount(0);
+                      setAmountTouched(false);
                     }}
                     className={inputCls}
                   />
@@ -493,19 +567,17 @@ export default function AttendancePaymentPage() {
                       <button
                         type="button"
                         onClick={() => setAllPaid(true)}
-                        disabled={paymentDisabled}
-                        title={paymentDisabled ? "Avval to'lov summasini kiriting" : undefined}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                       >
                         Hammasi to&apos;ladi
                       </button>
                       <button
                         type="button"
-                        onClick={() => setAllPaid(false)}
-                        disabled={paidIds.size === 0}
+                        onClick={() => setPaidOverrides({})}
+                        disabled={!hasOverrides}
                         className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        To&apos;lovni tozalash
+                        Belgilarni bekor qilish
                       </button>
                     </div>
                   </div>
@@ -536,7 +608,7 @@ export default function AttendancePaymentPage() {
                       {filteredStudents.map((item, idx) => {
                         const id = item.student.id;
                         const isPresent = attendanceData[id] ?? item.present;
-                        const isPaid = paidIds.has(id);
+                        const isPaid = isPaidNow(id);
 
                         return (
                           <div
@@ -602,12 +674,7 @@ export default function AttendancePaymentPage() {
                               </div>
 
                               {/* To'lov */}
-                              <div
-                                className={`flex w-[96px] flex-col items-center gap-1 transition ${
-                                  paymentDisabled ? 'opacity-50' : ''
-                                }`}
-                                title={paymentDisabled ? "Avval to'lov summasini kiriting" : undefined}
-                              >
+                              <div className="flex w-[96px] flex-col items-center gap-1">
                                 <Switch
                                   checked={isPaid}
                                   onChange={() => handleTogglePayment(id)}
@@ -664,8 +731,8 @@ export default function AttendancePaymentPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Wallet size={14} className="text-indigo-500" />
-                  {paidIds.size}/{totalCount} to&apos;ladi
-                  {paymentAmount > 0 && paidIds.size > 0 && (
+                  {paidCount}/{totalCount} to&apos;ladi
+                  {paymentAmount > 0 && paidCount > 0 && (
                     <span className="font-semibold text-slate-700">· {money(collected)} so&apos;m</span>
                   )}
                 </span>

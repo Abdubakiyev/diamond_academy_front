@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   DollarSign,
   CheckCircle,
@@ -48,6 +48,13 @@ const getErrorMessage = (err: unknown, fallback: string) => {
 type ToastState = { type: 'success' | 'error'; text: string } | null;
 type PaymentItem = NonNullable<ReturnType<typeof usePayments>['data']>[number];
 type ConfirmState = { kind: 'delete' | 'paid'; payment: PaymentItem } | null;
+
+type MonthData = {
+  students: {
+    id: string;
+    payment: { status: PaymentStatus; amount: string | number } | null;
+  }[];
+};
 
 const statusStyle = (status: PaymentStatus) => {
   switch (status) {
@@ -124,6 +131,32 @@ export default function PaymentPage() {
   const deleteMutation = useDeletePayment();
   const markPaidMutation = useMarkAsPaid();
 
+  /* Modal ochiq: tanlangan guruh va oy bo'yicha serverdagi to'lovlar */
+  const { data: monthData } = useQuery<MonthData>({
+    queryKey: ['payments', 'group-month', selectedGroupId, month],
+    enabled: showModal && !!selectedGroupId && !!month,
+    queryFn: async () =>
+      (
+        await apiClient.get(`/payment/group/${selectedGroupId}/month`, {
+          params: { month },
+        })
+      ).data,
+  });
+
+  // Serverdagi holat modalga yuklanadi (to'laganlar yoqilgan, summa to'ldiriladi)
+  useEffect(() => {
+    if (!monthData) return;
+    setPaidStudentIds(
+      new Set(
+        monthData.students
+          .filter((s) => s.payment?.status === PaymentStatus.PAID)
+          .map((s) => s.id),
+      ),
+    );
+    const first = monthData.students.find((s) => s.payment)?.payment;
+    if (first) setAmount((prev) => prev || Number(first.amount));
+  }, [monthData]);
+
   /* Toast avtomatik yopiladi */
   useEffect(() => {
     if (!toast) return;
@@ -166,7 +199,14 @@ export default function PaymentPage() {
   const handleGroupChange = (groupId: string) => {
     setSelectedGroupId(groupId);
     setPaidStudentIds(new Set());
+    setAmount(0);
     setStudentSearch('');
+  };
+
+  const handleMonthChange = (value: string) => {
+    setMonth(value);
+    setPaidStudentIds(new Set());
+    setAmount(0);
   };
 
   const togglePaid = (studentId: string) => {
@@ -178,21 +218,36 @@ export default function PaymentPage() {
     });
   };
 
-  // Har bir student uchun payment yaratadi, keyin ro'yxat yangilanadi
+  // Qatori yo'q yoki holati o'zgargan studentlar (faqat shularga so'rov yuboriladi)
+  const changes = useMemo(() => {
+    const existing = new Map((monthData?.students ?? []).map((s) => [s.id, s.payment]));
+    return students.filter((student: Student) => {
+      const row = existing.get(student.id);
+      const wantPaid = paidStudentIds.has(student.id);
+      return !row || (row.status === PaymentStatus.PAID) !== wantPaid;
+    });
+  }, [students, monthData, paidStudentIds]);
+
+  // Har bir student uchun to'lovni yaratadi yoki yangilaydi
   const handleSubmit = async () => {
     if (!selectedGroupId || !month || !amount || isSubmitting) return;
-    setIsSubmitting(true);
 
+    if (changes.length === 0) {
+      setToast({ type: 'success', text: "O'zgarish yo'q" });
+      closeModal();
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const results = await Promise.allSettled(
-        students.map((student: Student) =>
-          apiClient.post('/payment', {
+        changes.map((student: Student) =>
+          apiClient.put('/payment/student', {
             studentId: student.id,
             groupId: selectedGroupId,
+            month, // "2026-11"
             amount,
             status: paidStudentIds.has(student.id) ? PaymentStatus.PAID : PaymentStatus.PENDING,
-            month: new Date(month + '-01'),
-            paidAt: paidStudentIds.has(student.id) ? new Date() : undefined,
           }),
         ),
       );
@@ -210,11 +265,11 @@ export default function PaymentPage() {
       setToast(
         failed > 0
           ? { type: 'error', text: `${ok} ta saqlandi, ${failed} ta saqlanmadi` }
-          : { type: 'success', text: `${ok} ta to'lov qo'shildi` },
+          : { type: 'success', text: `${ok} ta to'lov saqlandi` },
       );
       closeModal();
     } catch (error) {
-      console.error('Error creating payments:', error);
+      console.error('Error saving payments:', error);
       setToast({ type: 'error', text: getErrorMessage(error, 'Xatolik yuz berdi!') });
     } finally {
       setIsSubmitting(false);
@@ -257,17 +312,6 @@ export default function PaymentPage() {
   }, [payments, searchTerm, monthFilter]);
 
   const filteredTotal = filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0);
-
-  // Tanlangan guruh va oy uchun allaqachon yozilgan to'lovlar (takrorlanishdan ogohlantirish)
-  const duplicateCount = useMemo(() => {
-    if (!selectedGroupId || !month) return 0;
-    const keys = new Set(
-      (payments ?? []).map(
-        (p) => `${p.student?.id}|${p.group?.id}|${monthKey(p.month)}`,
-      ),
-    );
-    return students.filter((s: Student) => keys.has(`${s.id}|${selectedGroupId}|${month}`)).length;
-  }, [payments, students, selectedGroupId, month]);
 
   const visibleStudents = useMemo(() => {
     const q = studentSearch.trim().toLowerCase();
@@ -527,9 +571,7 @@ export default function PaymentPage() {
                                 {st.text}
                               </span>
                             </td>
-                            <td className="px-6 py-4">
-                              {renderActions(payment)}
-                            </td>
+                            <td className="px-6 py-4">{renderActions(payment)}</td>
                           </tr>
                         );
                       })}
@@ -679,7 +721,7 @@ export default function PaymentPage() {
                   <input
                     type="month"
                     value={month}
-                    onChange={(e) => setMonth(e.target.value)}
+                    onChange={(e) => handleMonthChange(e.target.value)}
                     className={inputCls}
                   />
                 </div>
@@ -729,16 +771,6 @@ export default function PaymentPage() {
                       </div>
                     )}
                   </div>
-
-                  {duplicateCount > 0 && (
-                    <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                      <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                      <span>
-                        Bu oy uchun {duplicateCount} ta talabada to&apos;lov allaqachon mavjud. Saqlasangiz,
-                        takroriy yozuvlar paydo bo&apos;ladi.
-                      </span>
-                    </div>
-                  )}
 
                   {students.length > 0 ? (
                     <>
@@ -840,7 +872,7 @@ export default function PaymentPage() {
                 ) : (
                   <>
                     <DollarSign size={16} />
-                    Saqlash ({students.length} ta student)
+                    Saqlash ({changes.length} ta o&apos;zgarish)
                   </>
                 )}
               </button>

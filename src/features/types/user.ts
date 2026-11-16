@@ -1,6 +1,7 @@
 import { TestResult } from './test-result';
 
-export type UserRole = 'USER' | 'ADMIN';
+// eski:  export type UserRole = 'USER' | 'ADMIN';
+export type UserRole = 'USER' | 'ADMIN' | 'TEACHER';
 
 export interface User {
   id: string;

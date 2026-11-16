@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Plus,
   Edit,
@@ -13,58 +14,65 @@ import {
   Search,
   X,
   RefreshCw,
-} from 'lucide-react';
-import { Group } from '@/features/types';
-import { useDeleteGroup, useGroups } from '@/features/hooks/useGroups';
-import { CreateGroupModal } from '@/features/modals/useCreateGroupModal';
-import { EditGroupModal } from '@/features/modals/useEditGroupModal';
-import { useLevels } from '@/features/hooks/useLevel';
-import AdminHeader from '@/components/AdminLayout';
+  ArrowRight,
+} from "lucide-react";
+import { Group } from "@/features/types";
+import { useDeleteGroup, useGroups } from "@/features/hooks/useGroups";
+import { CreateGroupModal } from "@/features/modals/useCreateGroupModal";
+import { EditGroupModal } from "@/features/modals/useEditGroupModal";
+import { useLevels } from "@/features/hooks/useLevel";
+import AdminHeader from "@/components/AdminLayout";
 
 /* ───────────── Daraja ranglari ───────────── */
-type LevelStyle = { bg: string; text: string; dot: string; bar: string; avatar: string };
+type LevelStyle = {
+  bg: string;
+  text: string;
+  dot: string;
+  bar: string;
+  avatar: string;
+};
 
 const levelColors: Record<string, LevelStyle> = {
   BEGINNER: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    dot: 'bg-emerald-400',
-    bar: 'from-emerald-400 to-green-500',
-    avatar: 'from-emerald-400 to-green-600',
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    dot: "bg-emerald-400",
+    bar: "from-emerald-400 to-green-500",
+    avatar: "from-emerald-400 to-green-600",
   },
   ELEMENTARY: {
-    bg: 'bg-sky-50',
-    text: 'text-sky-700',
-    dot: 'bg-sky-400',
-    bar: 'from-sky-400 to-blue-500',
-    avatar: 'from-sky-400 to-blue-600',
+    bg: "bg-sky-50",
+    text: "text-sky-700",
+    dot: "bg-sky-400",
+    bar: "from-sky-400 to-blue-500",
+    avatar: "from-sky-400 to-blue-600",
   },
   INTERMEDIATE: {
-    bg: 'bg-violet-50',
-    text: 'text-violet-700',
-    dot: 'bg-violet-400',
-    bar: 'from-violet-400 to-purple-500',
-    avatar: 'from-violet-500 to-purple-600',
+    bg: "bg-violet-50",
+    text: "text-violet-700",
+    dot: "bg-violet-400",
+    bar: "from-violet-400 to-purple-500",
+    avatar: "from-violet-500 to-purple-600",
   },
   ADVANCED: {
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    dot: 'bg-amber-400',
-    bar: 'from-amber-400 to-orange-500',
-    avatar: 'from-amber-400 to-orange-600',
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    dot: "bg-amber-400",
+    bar: "from-amber-400 to-orange-500",
+    avatar: "from-amber-400 to-orange-600",
   },
 };
 
 const defaultLevel: LevelStyle = {
-  bg: 'bg-slate-100',
-  text: 'text-slate-600',
-  dot: 'bg-slate-400',
-  bar: 'from-slate-300 to-slate-400',
-  avatar: 'from-slate-400 to-slate-600',
+  bg: "bg-slate-100",
+  text: "text-slate-600",
+  dot: "bg-slate-400",
+  bar: "from-slate-300 to-slate-400",
+  avatar: "from-slate-400 to-slate-600",
 };
 
-type Filter = 'all' | 'active' | 'inactive';
-type ToastState = { type: 'success' | 'error'; text: string } | null;
+type Filter = "all" | "active" | "inactive";
+type ToastState = { type: "success" | "error"; text: string } | null;
 
 const getErrorMessage = (err: unknown, fallback: string) => {
   const e = err as {
@@ -72,7 +80,7 @@ const getErrorMessage = (err: unknown, fallback: string) => {
     response?: { status?: number; data?: { message?: string | string[] } };
   };
   const msg = e?.response?.data?.message;
-  const text = Array.isArray(msg) ? msg.join(', ') : msg;
+  const text = Array.isArray(msg) ? msg.join(", ") : msg;
   return text || e?.message || fallback;
 };
 
@@ -81,8 +89,8 @@ export default function GroupsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Group | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
-  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
   const [toast, setToast] = useState<ToastState>(null);
 
   const { data: groups, isLoading } = useGroups();
@@ -100,21 +108,24 @@ export default function GroupsPage() {
   useEffect(() => {
     if (!deleteTarget) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !deleteGroup.isPending) setDeleteTarget(null);
+      if (e.key === "Escape" && !deleteGroup.isPending) setDeleteTarget(null);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [deleteTarget, deleteGroup.isPending]);
 
   const handleConfirmDelete = () => {
     if (!deleteTarget) return;
     deleteGroup.mutate(deleteTarget.id, {
       onSuccess: () => {
-        setToast({ type: 'success', text: "Guruh o'chirildi" });
+        setToast({ type: "success", text: "Guruh o'chirildi" });
         setDeleteTarget(null);
       },
       onError: (err: unknown) => {
-        setToast({ type: 'error', text: getErrorMessage(err, "O'chirishda xatolik") });
+        setToast({
+          type: "error",
+          text: getErrorMessage(err, "O'chirishda xatolik"),
+        });
       },
     });
   };
@@ -124,50 +135,53 @@ export default function GroupsPage() {
   const total = list.length;
   const activeCount = list.filter((g) => g.isActive).length;
   const inactiveCount = total - activeCount;
-  const totalStudents = list.reduce((sum, g) => sum + (g._count?.students ?? 0), 0);
+  const totalStudents = list.reduce(
+    (sum, g) => sum + (g._count?.students ?? 0),
+    0,
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return list.filter((g) => {
-      if (filter === 'active' && !g.isActive) return false;
-      if (filter === 'inactive' && g.isActive) return false;
+      if (filter === "active" && !g.isActive) return false;
+      if (filter === "inactive" && g.isActive) return false;
       if (!q) return true;
       return (
         g.name.toLowerCase().includes(q) ||
-        (g.level?.type ?? '').toLowerCase().includes(q) ||
-        (g.schedule ?? '').toLowerCase().includes(q)
+        (g.level?.type ?? "").toLowerCase().includes(q) ||
+        (g.schedule ?? "").toLowerCase().includes(q)
       );
     });
   }, [list, filter, query]);
 
   const stats = [
     {
-      label: 'Jami guruhlar',
+      label: "Jami guruhlar",
       value: total,
       icon: BookOpen,
-      box: 'bg-indigo-100 text-indigo-600',
-      bar: 'from-indigo-500 to-violet-500',
+      box: "bg-indigo-100 text-indigo-600",
+      bar: "from-indigo-500 to-violet-500",
     },
     {
-      label: 'Faol guruhlar',
+      label: "Faol guruhlar",
       value: activeCount,
       icon: CheckCircle,
-      box: 'bg-emerald-100 text-emerald-600',
-      bar: 'from-emerald-400 to-green-500',
+      box: "bg-emerald-100 text-emerald-600",
+      bar: "from-emerald-400 to-green-500",
     },
     {
-      label: 'Jami talabalar',
+      label: "Jami talabalar",
       value: totalStudents,
       icon: Users,
-      box: 'bg-sky-100 text-sky-600',
-      bar: 'from-sky-400 to-blue-500',
+      box: "bg-sky-100 text-sky-600",
+      bar: "from-sky-400 to-blue-500",
     },
   ];
 
   const tabs: { key: Filter; label: string; count: number }[] = [
-    { key: 'all', label: 'Barchasi', count: total },
-    { key: 'active', label: 'Faol', count: activeCount },
-    { key: 'inactive', label: 'Nofaol', count: inactiveCount },
+    { key: "all", label: "Barchasi", count: total },
+    { key: "active", label: "Faol", count: activeCount },
+    { key: "inactive", label: "Nofaol", count: inactiveCount },
   ];
 
   /* ───────────── Yuklanmoqda (skeleton) ───────────── */
@@ -208,7 +222,9 @@ export default function GroupsPage() {
             <h1 className="text-3xl font-bold tracking-tight text-slate-800 md:text-4xl">
               Guruhlar
             </h1>
-            <p className="mt-1 text-slate-500">Barcha guruhlar ro&apos;yxati va boshqaruv</p>
+            <p className="mt-1 text-slate-500">
+              Barcha guruhlar ro&apos;yxati va boshqaruv
+            </p>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
@@ -226,7 +242,9 @@ export default function GroupsPage() {
               key={s.label}
               className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${s.bar}`} />
+              <div
+                className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${s.bar}`}
+              />
               <div className="flex items-center justify-between">
                 <div>
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -256,7 +274,7 @@ export default function GroupsPage() {
               />
               {query && (
                 <button
-                  onClick={() => setQuery('')}
+                  onClick={() => setQuery("")}
                   aria-label="Tozalash"
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600"
                 >
@@ -272,14 +290,16 @@ export default function GroupsPage() {
                   onClick={() => setFilter(t.key)}
                   className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition ${
                     filter === t.key
-                      ? 'bg-indigo-600 text-white shadow'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      ? "bg-indigo-600 text-white shadow"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   {t.label}
                   <span
                     className={`rounded-full px-1.5 text-xs ${
-                      filter === t.key ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                      filter === t.key
+                        ? "bg-white/25 text-white"
+                        : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {t.count}
@@ -294,7 +314,7 @@ export default function GroupsPage() {
         {filtered.length > 0 && (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((group) => {
-              const levelKey = group.level?.type ?? '';
+              const levelKey = group.level?.type ?? "";
               const colors = levelColors[levelKey] ?? defaultLevel;
               const studentCount = group._count?.students ?? 0;
 
@@ -303,7 +323,9 @@ export default function GroupsPage() {
                   key={group.id}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className={`h-1.5 w-full bg-gradient-to-r ${colors.bar}`} />
+                  <div
+                    className={`h-1.5 w-full bg-gradient-to-r ${colors.bar}`}
+                  />
                   <div className="flex flex-1 flex-col p-5">
                     {/* Sarlavha */}
                     <div className="mb-4 flex items-start gap-3">
@@ -314,12 +336,19 @@ export default function GroupsPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate text-base font-bold text-slate-800">
-                          {group.name}
+                          <Link
+                            href={`/diamond-academy/admin/group/${group.id}`}
+                            className="transition hover:text-indigo-600"
+                          >
+                            {group.name}
+                          </Link>
                         </h3>
                         <span
                           className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${colors.bg} ${colors.text}`}
                         >
-                          <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${colors.dot}`}
+                          />
                           {group.level?.type || "Level noma'lum"}
                         </span>
                       </div>
@@ -336,8 +365,10 @@ export default function GroupsPage() {
                       <div className="flex items-center gap-2.5 text-sm text-slate-500">
                         <Users className="h-4 w-4 shrink-0 text-slate-400" />
                         <span>
-                          <span className="font-semibold text-slate-700">{studentCount}</span> ta
-                          talaba
+                          <span className="font-semibold text-slate-700">
+                            {studentCount}
+                          </span>{" "}
+                          ta talaba
                         </span>
                       </div>
                     </div>
@@ -347,19 +378,26 @@ export default function GroupsPage() {
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
                           group.isActive
-                            ? 'bg-emerald-50 text-emerald-600'
-                            : 'bg-slate-100 text-slate-500'
+                            ? "bg-emerald-50 text-emerald-600"
+                            : "bg-slate-100 text-slate-500"
                         }`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
-                            group.isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                            group.isActive ? "bg-emerald-500" : "bg-slate-400"
                           }`}
                         />
-                        {group.isActive ? 'Faol' : 'Nofaol'}
+                        {group.isActive ? "Faol" : "Nofaol"}
                       </span>
 
                       <div className="flex items-center gap-1">
+                        <Link
+                          href={`/diamond-academy/admin/group/${group.id}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+                        >
+                          Ochish
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
                         <button
                           onClick={() => setEditingGroup(group)}
                           className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-indigo-600 transition hover:bg-indigo-50"
@@ -390,7 +428,9 @@ export default function GroupsPage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
               <BookOpen className="h-8 w-8 text-indigo-400" />
             </div>
-            <p className="mb-1 text-lg font-semibold text-slate-700">Guruhlar yo&apos;q</p>
+            <p className="mb-1 text-lg font-semibold text-slate-700">
+              Guruhlar yo&apos;q
+            </p>
             <p className="mb-6 text-sm text-slate-500">
               Birinchi guruhni qo&apos;shish uchun tugmani bosing
             </p>
@@ -410,8 +450,8 @@ export default function GroupsPage() {
             <p className="font-medium text-slate-600">Hech narsa topilmadi</p>
             <button
               onClick={() => {
-                setQuery('');
-                setFilter('all');
+                setQuery("");
+                setFilter("all");
               }}
               className="mt-3 text-sm font-medium text-indigo-600 hover:underline"
             >
@@ -441,7 +481,8 @@ export default function GroupsPage() {
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget && !deleteGroup.isPending) setDeleteTarget(null);
+            if (e.target === e.currentTarget && !deleteGroup.isPending)
+              setDeleteTarget(null);
           }}
         >
           <div
@@ -452,10 +493,14 @@ export default function GroupsPage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
               <Trash2 className="h-6 w-6 text-red-600" />
             </div>
-            <h3 className="mb-1 text-lg font-bold text-slate-800">Guruhni o&apos;chirasizmi?</h3>
+            <h3 className="mb-1 text-lg font-bold text-slate-800">
+              Guruhni o&apos;chirasizmi?
+            </h3>
             <p className="mb-6 text-sm text-slate-500">
-              <span className="font-medium text-slate-700">{deleteTarget.name}</span> guruhi
-              o&apos;chiriladi. Bu amalni qaytarib bo&apos;lmaydi.
+              <span className="font-medium text-slate-700">
+                {deleteTarget.name}
+              </span>{" "}
+              guruhi o&apos;chiriladi. Bu amalni qaytarib bo&apos;lmaydi.
             </p>
             <div className="flex gap-3">
               <button
@@ -470,7 +515,9 @@ export default function GroupsPage() {
                 disabled={deleteGroup.isPending}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
               >
-                {deleteGroup.isPending && <RefreshCw className="h-4 w-4 animate-spin" />}
+                {deleteGroup.isPending && (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                )}
                 O&apos;chirish
               </button>
             </div>
@@ -483,10 +530,10 @@ export default function GroupsPage() {
         <div
           role="status"
           className={`fixed bottom-5 right-5 z-[120] flex max-w-sm items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-xl ${
-            toast.type === 'success' ? 'bg-slate-900' : 'bg-red-600'
+            toast.type === "success" ? "bg-slate-900" : "bg-red-600"
           }`}
         >
-          {toast.type === 'success' ? (
+          {toast.type === "success" ? (
             <CheckCircle className="h-[18px] w-[18px] shrink-0 text-emerald-400" />
           ) : (
             <XCircle className="h-[18px] w-[18px] shrink-0" />
