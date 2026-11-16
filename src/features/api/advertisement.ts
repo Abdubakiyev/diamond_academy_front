@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { Advertisement, CreateAdvertisementDto, UpdateAdvertisementDto } from '../types/advertisement';
 
-const BASE_URL = 'http://localhost:3000/advertisements';
+const BASE_URL = 'https://diamondacademyback-production.up.railway.app/advertisements';
 
 const getToken = (): string => {
   const token = localStorage.getItem('access_token');
