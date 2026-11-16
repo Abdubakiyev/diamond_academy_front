@@ -122,7 +122,7 @@ export interface ExamPartDetail {
   answerTimeSec: number | null;
   meta: Record<string, unknown> | null;
   options: PartOption[];
-  questions: Array<{ id: string; number: number; order: number; type: string }>;
+  questions: Array<{ id: string; number: number; order: number; type: string; correctPartOptionId?: string | null }>;
 }
 
 export type ExamAction = 'publish' | 'unpublish' | 'archive' | 'restore';

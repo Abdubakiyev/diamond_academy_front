@@ -63,7 +63,9 @@ export default function PartEditor({ examId, partId }: { examId: string; partId:
   const ref: PartRef = { id: part.id, format: part.format, skill: section.skill, options: part.options };
   const skill = SKILL_META[section.skill];
 
-  const orphaned = part.questions.filter((q) => q.type === 'MATCHING' && !q.correctPartOption).length;
+  const orphaned = part.questions.filter(
+    (q) => q.type === 'MATCHING' && !q.correctPartOptionId,
+  ).length;
 
   return (
     <div className="space-y-6">
