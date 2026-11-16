@@ -1,7 +1,7 @@
 import type { Role } from './common';
 
 export interface RegisterDto {
-  name: string;
+  name?: string;
   phone: string;
   password: string;
   role?: Role;
@@ -9,7 +9,7 @@ export interface RegisterDto {
 
 export interface MeUser {
   id: string;
-  name: string;
+  name?: string;
   phone: string;
   role: Role;
   createdAt?: string;
