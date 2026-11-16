@@ -32,6 +32,7 @@ const STATUS: Record<AttemptStatus, { label: string; cls: string }> = {
   SUBMITTED: { label: 'Topshirildi', cls: 'bg-sky-50 text-sky-700 ring-sky-200' },
   GRADING: { label: 'Baholanmoqda', cls: 'bg-indigo-50 text-indigo-700 ring-indigo-200' },
   COMPLETED: { label: 'Yakunlandi', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
+  EXPIRED: { label: 'Vaqt tugagan', cls: 'bg-red-50 text-red-700 ring-red-200' },
 };
 
 const SKILLS: Array<{ key: keyof ExamAttemptListItem; label: string; color: string }> = [
