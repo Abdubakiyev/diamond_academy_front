@@ -163,7 +163,16 @@ function Content({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, isLoading, isError, error } = useEvaluation(id);
   if (isLoading || isError || !data) {
     return (
-      <ModalShell icon={Bot} title="AI baholash" onClose={onClose} onSubmit={() => {}} submitLabel="Saqlash" submitDisabled errorMessage={isError ? handleApiError(error) : null}>
+      <ModalShell
+        icon={Bot}
+        title="AI baholash"
+        onClose={onClose}
+        onSubmit={() => {}}
+        submitLabel="Saqlash"
+        submitIcon={Save}
+        submitDisabled
+        errorMessage={isError ? handleApiError(error) : null}
+      >
         {isLoading && <Spinner className="py-10" />}
       </ModalShell>
     );
