@@ -4,6 +4,7 @@ export interface Attendance {
   group: string;
   date: string;
   present: boolean;
+  diamond: boolean; 
   extra?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;

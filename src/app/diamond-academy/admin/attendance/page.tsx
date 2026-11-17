@@ -17,6 +17,7 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
+  Gem,
 } from 'lucide-react';
 import AdminHeader from '@/components/AdminLayout';
 import { PaymentStatus } from '@/features/types/payment';
@@ -31,6 +32,7 @@ import { apiClient } from '@/features/api/client';
 type AttendanceItem = {
   student: { id: string; name: string; phone?: string | null };
   present: boolean;
+  diamond?: boolean;
 };
 
 type MonthData = {
@@ -110,6 +112,8 @@ export default function AttendancePaymentPage() {
   const [attGroupId, setAttGroupId] = useState('');
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [attendanceData, setAttendanceData] = useState<Record<string, boolean>>({});
+  // Diamond: faqat foydalanuvchi o'zgartirganlari (qolganlari serverdan)
+  const [diamondData, setDiamondData] = useState<Record<string, boolean>>({});
   // Faqat foydalanuvchi o'zgartirgan to'lov belgilari (qolganlari serverdan olinadi)
   const [paidOverrides, setPaidOverrides] = useState<Record<string, boolean>>({});
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
@@ -160,6 +164,11 @@ export default function AttendancePaymentPage() {
 
   const isPaidNow = (id: string) => paidOverrides[id] ?? serverPaid.has(id);
 
+  // Diamond faqat kelgan o'quvchida bo'ladi
+  const isDiamondNow = (item: AttendanceItem) =>
+    (attendanceData[item.student.id] ?? item.present) &&
+    (diamondData[item.student.id] ?? item.diamond ?? false);
+
   /* Toast avtomatik yopiladi */
   useEffect(() => {
     if (!toast) return;
@@ -187,6 +196,7 @@ export default function AttendancePaymentPage() {
   const absentCount = totalCount - presentCount;
   const attendanceRate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
   const paidCount = list.filter((item) => isPaidNow(item.student.id)).length;
+  const diamondCount = list.filter(isDiamondNow).length;
   const collected = paidCount * paymentAmount;
 
   const filteredStudents = useMemo(() => {
@@ -202,6 +212,7 @@ export default function AttendancePaymentPage() {
   /* ── Amallar ── */
   const resetSelections = () => {
     setAttendanceData({});
+    setDiamondData({});
     setPaidOverrides({});
     setDirty(false);
   };
@@ -226,11 +237,20 @@ export default function AttendancePaymentPage() {
 
   const setPresent = (studentId: string, value: boolean) => {
     setAttendanceData((prev) => ({ ...prev, [studentId]: value }));
+    if (!value) setDiamondData((prev) => ({ ...prev, [studentId]: false })); // kelmagan 💎 olmaydi
     setDirty(true);
   };
 
   const setAllPresent = (value: boolean) => {
     setAttendanceData(Object.fromEntries(list.map((item) => [item.student.id, value])));
+    if (!value) {
+      setDiamondData(Object.fromEntries(list.map((item) => [item.student.id, false])));
+    }
+    setDirty(true);
+  };
+
+  const toggleDiamond = (item: AttendanceItem) => {
+    setDiamondData((prev) => ({ ...prev, [item.student.id]: !isDiamondNow(item) }));
     setDirty(true);
   };
 
@@ -266,10 +286,11 @@ export default function AttendancePaymentPage() {
 
     setIsSaving(true);
     try {
-      // 1. Davomat saqlash
+      // 1. Davomat saqlash (diamond bilan)
       const attendances = list.map((item) => ({
         studentId: item.student.id,
         present: attendanceData[item.student.id] ?? item.present,
+        diamond: isDiamondNow(item),
       }));
       await new Promise<void>((resolve, reject) => {
         createAttendance.mutate(
@@ -591,6 +612,9 @@ export default function AttendancePaymentPage() {
                       <span className="w-[132px] text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
                         Davomat
                       </span>
+                      <span className="w-[56px] text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        💎
+                      </span>
                       <span className="w-[96px] text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
                         To&apos;lov
                       </span>
@@ -609,6 +633,7 @@ export default function AttendancePaymentPage() {
                         const id = item.student.id;
                         const isPresent = attendanceData[id] ?? item.present;
                         const isPaid = isPaidNow(id);
+                        const hasDiamond = isDiamondNow(item);
 
                         return (
                           <div
@@ -673,6 +698,34 @@ export default function AttendancePaymentPage() {
                                 </button>
                               </div>
 
+                              {/* Diamond */}
+                              <div className="flex w-[56px] justify-center">
+                                <button
+                                  type="button"
+                                  disabled={!isPresent}
+                                  aria-pressed={hasDiamond}
+                                  aria-label={`${item.student.name} diamond`}
+                                  title={
+                                    isPresent
+                                      ? 'Diamond berish / olib tashlash'
+                                      : 'Avval "Keldi" ni belgilang'
+                                  }
+                                  onClick={() => toggleDiamond(item)}
+                                  className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 transition active:scale-90 disabled:cursor-not-allowed disabled:opacity-40 ${
+                                    hasDiamond
+                                      ? 'bg-sky-50 ring-sky-300'
+                                      : 'bg-white ring-slate-200 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <Gem
+                                    size={18}
+                                    className={
+                                      hasDiamond ? 'fill-sky-300 text-sky-600' : 'text-slate-300'
+                                    }
+                                  />
+                                </button>
+                              </div>
+
                               {/* To'lov */}
                               <div className="flex w-[96px] flex-col items-center gap-1">
                                 <Switch
@@ -728,6 +781,10 @@ export default function AttendancePaymentPage() {
                 <span className="flex items-center gap-1.5">
                   <UserCheck size={14} className="text-emerald-500" />
                   {presentCount}/{totalCount} keldi
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Gem size={14} className="text-sky-500" />
+                  {diamondCount} diamond
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Wallet size={14} className="text-indigo-500" />
