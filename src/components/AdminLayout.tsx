@@ -17,7 +17,6 @@ const sections: Section[] = [
     label: 'Markaz',
     items: [
       { label: 'Group', path: `${ADMIN_HOME}/group` },
-      { label: 'Guruh jadvali', path: `${ADMIN_HOME}/groups` },
       { label: 'Student', path: `${ADMIN_HOME}/students` },
       { label: 'Davomat', path: `${ADMIN_HOME}/attendance` },
       { label: 'To‘lovlar', path: `${ADMIN_HOME}/payment` },
