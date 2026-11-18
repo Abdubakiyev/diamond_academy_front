@@ -27,7 +27,7 @@ export async function uploadFile(file: File | Blob, purpose: UploadPurpose, opts
     contentType,
     sizeBytes: file.size,
   });
-
+  console.log('PRESIGN', presign, 'file.size=', file.size, 'type=', contentType);
   await axios.put(presign.uploadUrl, file, {
     headers: presign.headers,
     signal: opts.signal,
