@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3,
-  BookOpen,
   CreditCard,
   FileText,
+  Gem,
   Home,
   LayoutDashboard,
   LogOut,
@@ -38,13 +38,14 @@ const ADMIN_HOME = '/diamond-academy/admin';
 /** Hamma foydalanuvchilar uchun */
 const baseItems: NavItem[] = [
   { label: 'Bosh sahifa', path: '/', icon: Home },
-  { label: 'Kurslar', path: '/courses', icon: BookOpen },
   { label: 'Imtihonlar', path: '/exams', icon: FileText },
   { label: 'Natijalarim', path: '/my/attempts', icon: BarChart3 },
   { label: 'To‘lovlarim', path: '/my/payments', icon: CreditCard },
   { label: 'Kurslarim', path: '/my/courses', icon: PlayCircle },
+  { label: 'Statistika', path: '/my/stats', icon: Gem },
   { label: 'Profil', path: '/profile', icon: User },
 ];
+
 
 /** Faqat xodimlar uchun qo'shimcha tugma */
 const adminItem: NavItem = { label: 'Boshqaruv', path: ADMIN_HOME, icon: LayoutDashboard };
