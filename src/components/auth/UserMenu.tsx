@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, FileText, GraduationCap, LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react';
+import { ChevronDown, FileText, Gem, GraduationCap, LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react';
 import { useLogout, useMe } from '../../features/hooks/useAuth';
 import { initials } from '../../lib/format';
 import { ADMIN_HOME, LOGIN_PATH } from '../../lib/config';
@@ -66,6 +66,11 @@ export default function UserMenu() {
           <Link href="/my/courses" onClick={() => setOpen(false)} className={item}>
             <GraduationCap className="h-4 w-4 text-gray-400" /> Kurslarim
           </Link>
+          {!staff && (
+            <Link href="/my/stats" onClick={() => setOpen(false)} className={item}>
+              <Gem className="h-4 w-4 text-gray-400" /> Statistikam
+            </Link>
+          )}
           <Link href="/my/attempts" onClick={() => setOpen(false)} className={item}>
             <FileText className="h-4 w-4 text-gray-400" /> Natijalarim
           </Link>
