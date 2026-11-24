@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
+import { logout } from '@/lib/logout';
 
 const ADMIN_HOME = '/diamond-academy/admin';
 
@@ -53,18 +54,12 @@ const sections: Section[] = [
 ];
 
 export default function AdminHeader() {
-  const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('access_token');
-    setMobileMenuOpen(false);
-    router.replace('/register');
-  };
+  const handleLogout = () => logout();
 
   // "/group" va "/groups", "/exams" va "/exam-payments" bir-birini faol qilmasligi uchun "/" bilan solishtiriladi
   const isActive = (path: string) =>

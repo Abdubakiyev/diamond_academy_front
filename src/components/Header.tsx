@@ -3,7 +3,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   BarChart3,
   CreditCard,
@@ -19,6 +19,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
+import { logout } from '@/lib/logout';
 
 interface StoredUser {
   name?: string;
@@ -64,7 +65,6 @@ const getSnapshot = () => localStorage.getItem(USER_KEY);
 const getServerSnapshot = () => null;
 
 const Header = () => {
-  const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -86,15 +86,7 @@ const Header = () => {
     return baseItems;
   }, [role]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('access_verified');
-    localStorage.removeItem(USER_KEY);
-    window.dispatchEvent(new Event(USER_CHANGE_EVENT));
-    setMobileOpen(false);
-    router.replace('/register');
-  };
+  const handleLogout = () => logout();
 
   // "/" faqat aniq mos kelganda; qolganlari ichki sahifalarda ham faol ("/" bilan solishtiriladi)
   const isActive = (path: string) =>
