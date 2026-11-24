@@ -1,6 +1,8 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import AudioPlayer from './AudioPlayer';
+import Highlightable from './Highlightable';
 import QuestionRenderer from './QuestionRenderer';
 import type { AnswerDraft, SessionPart } from '../../features/types/exam-session';
 
@@ -16,6 +18,10 @@ interface Props {
 
 export default function PartView({ attemptId, part, answers, onAnswer, flags, onFlag, onBusy }: Props) {
   const hasPassage = !!part.passageText;
+
+  // Faqat Listening / Reading: Writing va Speaking partlarida belgilash yo'q
+  const canHighlight = !part.questions.some((q) => q.type === 'WRITING_PROMPT' || q.type === 'SPEAKING_PROMPT');
+  const hl = (id: string, node: ReactNode) => (canHighlight ? <Highlightable id={id}>{node}</Highlightable> : node);
 
   const questions = (
     <div className="space-y-4">
@@ -40,7 +46,11 @@ export default function PartView({ attemptId, part, answers, onAnswer, flags, on
       {(part.title || part.instructions) && (
         <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
           {part.title && <h2 className="font-semibold text-gray-900">{part.title}</h2>}
-          {part.instructions && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{part.instructions}</p>}
+          {part.instructions &&
+            hl(
+              `instr-${part.id}`,
+              <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{part.instructions}</p>,
+            )}
         </div>
       )}
 
@@ -55,25 +65,31 @@ export default function PartView({ attemptId, part, answers, onAnswer, flags, on
       {part.options.length > 0 && (
         <div className="rounded-2xl bg-violet-50/70 p-4 ring-1 ring-violet-100">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-violet-700">Variantlar</p>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {part.options.map((o) => (
-              <li key={o.id} className="flex items-start gap-2.5 text-sm text-gray-800">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-600 text-xs font-bold text-white">{o.label}</span>
-                <span className="pt-0.5">{o.text}</span>
-                {o.imageUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={o.imageUrl} alt="" className="h-12 rounded-md" />
-                )}
-              </li>
-            ))}
-          </ul>
+          {hl(
+            `bank-${part.id}`,
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {part.options.map((o) => (
+                <li key={o.id} className="flex items-start gap-2.5 text-sm text-gray-800">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-600 text-xs font-bold text-white">{o.label}</span>
+                  <span className="pt-0.5">{o.text}</span>
+                  {o.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={o.imageUrl} alt="" className="h-12 rounded-md" />
+                  )}
+                </li>
+              ))}
+            </ul>,
+          )}
         </div>
       )}
 
       {hasPassage ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)] lg:self-start lg:overflow-y-auto">
-            <p className="whitespace-pre-wrap text-[15px] leading-7 text-gray-800">{part.passageText}</p>
+            {hl(
+              `passage-${part.id}`,
+              <p className="whitespace-pre-wrap text-[15px] leading-7 text-gray-800">{part.passageText}</p>,
+            )}
           </div>
           {questions}
         </div>

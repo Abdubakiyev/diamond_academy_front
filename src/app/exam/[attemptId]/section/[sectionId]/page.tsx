@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ import { useAnswerSync, type SyncStatus } from '../../../../../features/hooks/us
 import { handleApiError } from '../../../../../features/api/api';
 import { SKILL_META } from '../../../../../lib/exam-rules';
 import { isAnswered } from '../../../../../lib/exam-session';
+import { clearAllHighlights } from '../../../../../lib/highlight';
 import { cn } from '../../../../../lib/format';
 import type { AnswerDraft, SectionPayload } from '../../../../../features/types/exam-session';
 
@@ -40,6 +41,9 @@ function Session({ payload }: { payload: SectionPayload }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
   const leaving = useRef(false);
+
+  // Bo'lim yopilganda (topshirilganda, vaqt tugaganda yoki sahifadan chiqilganda) belgilar o'chadi
+  useEffect(() => () => clearAllHighlights(), []);
 
   const initial = useMemo(() => {
     const map: Record<string, AnswerDraft> = {};
@@ -90,7 +94,10 @@ function Session({ payload }: { payload: SectionPayload }) {
       submit.mutate(
         { attemptId, sectionId },
         {
-          onSuccess: (res) => finishNavigation(res.attemptFinished),
+          onSuccess: (res) => {
+            clearAllHighlights();
+            finishNavigation(res.attemptFinished);
+          },
           onError: (e) => {
             // Server vaqti tugagan bo'limni o'zi topshirib bo'lgan bo'lishi mumkin
             if (!auto) toast.error(handleApiError(e));

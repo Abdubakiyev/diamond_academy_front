@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Flag } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
+import Highlightable from './Highlightable';
 import WritingEditor from './WritingEditor';
 import SpeakingRecorder from './SpeakingRecorder';
 import { isAnswered } from '../../lib/exam-session';
@@ -25,10 +26,26 @@ interface Props {
 const blankInput =
   'rounded-lg border-0 border-b-2 border-indigo-300 bg-indigo-50/60 px-2 py-1 text-sm font-medium text-gray-900 focus:border-indigo-600 focus:outline-none focus:ring-0';
 
+/** Matn tanlanayotgan bo'lsa true: bu holatda bosish javobni o'zgartirmasligi kerak */
+const hasTextSelection = () => {
+  const s = typeof window !== 'undefined' ? window.getSelection() : null;
+  return !!s && !s.isCollapsed && s.toString().length > 0;
+};
+
 export default function QuestionRenderer({ attemptId, q, part, answer, onChange, flagged, onFlag, onBusy }: Props) {
   const images = q.media.filter((m) => m.kind === 'IMAGE' && m.url);
   const answered = isAnswered(q, answer);
   const longForm = q.type === 'WRITING_PROMPT' || q.type === 'SPEAKING_PROMPT';
+
+  // Faqat Listening / Reading savollarida belgilash bor
+  const hl = (id: string, node: ReactNode, className?: string) =>
+    longForm ? (
+      node
+    ) : (
+      <Highlightable id={id} className={className}>
+        {node}
+      </Highlightable>
+    );
 
   const shortInput = (
     <input
@@ -56,36 +73,54 @@ export default function QuestionRenderer({ attemptId, q, part, answer, onChange,
           ))}
 
           {/* Savol matni (qisqa javobda bo'sh joy ichiga input qo'yiladi) */}
-          {q.type === 'SHORT_ANSWER' && /_{2,}/.test(q.text) ? (
-            <p className="text-[15px] leading-9 text-gray-900">
-              {q.text.split(/_{2,}/).map((seg, i, arr) => (
-                <Fragment key={i}>
-                  {seg}
-                  {i < arr.length - 1 && (i === 0 ? shortInput : <span className="text-gray-300">____</span>)}
-                </Fragment>
-              ))}
-            </p>
-          ) : (
-            <p className={cn('whitespace-pre-wrap text-[15px] leading-relaxed text-gray-900', longForm && 'font-medium')}>{q.text}</p>
-          )}
+          {q.type === 'SHORT_ANSWER' && /_{2,}/.test(q.text)
+            ? hl(
+                `q-${q.id}`,
+                <p className="text-[15px] leading-9 text-gray-900">
+                  {q.text.split(/_{2,}/).map((seg, i, arr) => (
+                    <Fragment key={i}>
+                      {seg}
+                      {i < arr.length - 1 && (i === 0 ? shortInput : <span className="text-gray-300">____</span>)}
+                    </Fragment>
+                  ))}
+                </p>,
+              )
+            : hl(
+                `q-${q.id}`,
+                <p className={cn('whitespace-pre-wrap text-[15px] leading-relaxed text-gray-900', longForm && 'font-medium')}>{q.text}</p>,
+              )}
 
           {/* ─── Javob maydoni ─── */}
           {q.type === 'MULTIPLE_CHOICE' && (
             <div role="radiogroup" className="space-y-2">
               {q.options.map((o) => {
                 const on = answer?.selectedOptionId === o.id;
+                const toggle = () => onChange({ selectedOptionId: on ? null : o.id });
                 return (
-                  <button
+                  // button emas: ichidagi matnni sichqoncha bilan tanlab belgilash uchun
+                  <div
                     key={o.id}
-                    type="button"
                     role="radio"
                     aria-checked={on}
-                    onClick={() => onChange({ selectedOptionId: on ? null : o.id })}
-                    className={cn('flex w-full items-start gap-3 rounded-xl p-3 text-left text-sm ring-1 transition', on ? 'bg-indigo-50 ring-indigo-400' : 'bg-white ring-gray-200 hover:bg-gray-50')}
+                    tabIndex={0}
+                    onClick={() => {
+                      if (hasTextSelection()) return; // matn belgilanayotgan bo'lsa, javob o'zgarmaydi
+                      toggle();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggle();
+                      }
+                    }}
+                    className={cn(
+                      'flex w-full cursor-pointer items-start gap-3 rounded-xl p-3 text-left text-sm ring-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                      on ? 'bg-indigo-50 ring-indigo-400' : 'bg-white ring-gray-200 hover:bg-gray-50',
+                    )}
                   >
-                    <span className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold', on ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600')}>{o.label}</span>
-                    <span className="pt-0.5 text-gray-800">{o.text}</span>
-                  </button>
+                    <span className={cn('flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full text-xs font-bold', on ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600')}>{o.label}</span>
+                    {hl(`opt-${o.id}`, <span className="text-gray-800">{o.text}</span>, 'min-w-0 flex-1 select-text pt-0.5')}
+                  </div>
                 );
               })}
             </div>

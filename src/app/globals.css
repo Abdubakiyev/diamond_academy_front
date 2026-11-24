@@ -128,3 +128,6 @@ button:not(:disabled),
 @media (prefers-reduced-motion: reduce) {
   .da-float, .da-float-slow, .da-blob, .da-fade-up, .da-shimmer::after { animation: none; }
 }
+::highlight(hl-yellow) { background-color: #fde047; color: inherit; }
+::highlight(hl-green)  { background-color: #33d56e; color: inherit; }
+::highlight(hl-blue)   { background-color: #7673ff; color: inherit; }
