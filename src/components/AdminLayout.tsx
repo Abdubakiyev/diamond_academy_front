@@ -20,6 +20,7 @@ const sections: Section[] = [
       { label: 'Student', path: `${ADMIN_HOME}/students` },
       { label: 'Davomat', path: `${ADMIN_HOME}/attendance` },
       { label: 'To‘lovlar', path: `${ADMIN_HOME}/payment` },
+      { label: 'Ota-onalar', path: `${ADMIN_HOME}/parents` },   // <- yangi
     ],
   },
   {
