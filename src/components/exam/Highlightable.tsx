@@ -15,7 +15,7 @@ import {
 const SWATCH: Record<HlColor, string> = {
   yellow: 'bg-yellow-300',
   green: 'bg-green-300',
-  pink: 'bg-pink-300',
+  blue: 'bg-blue-300',
 };
 
 type Sel = { start: number; end: number; x: number; y: number };

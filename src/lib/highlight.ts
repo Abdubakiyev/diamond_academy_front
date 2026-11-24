@@ -1,5 +1,5 @@
-export type HlColor = 'yellow' | 'green' | 'pink';
-export const HL_COLORS: HlColor[] = ['yellow', 'green', 'pink'];
+export type HlColor = 'yellow' | 'green' | 'blue';
+export const HL_COLORS: HlColor[] = ['yellow', 'green', 'blue'];
 
 type Mark = { start: number; end: number; color: HlColor };
 
@@ -9,6 +9,21 @@ const containers = new Map<string, HTMLElement>();
 
 type HighlightLike = { add(r: Range): void };
 type HighlightCtor = new () => HighlightLike;
+
+const STYLE_ID = 'hl-styles';
+
+/** ::highlight qoidalari Turbopack CSS parseridan o'tmaydi, shuning uchun brauzerda qo'shiladi */
+function ensureStyles() {
+  if (typeof document === 'undefined' || document.getElementById(STYLE_ID)) return;
+  const el = document.createElement('style');
+  el.id = STYLE_ID;
+  el.textContent = `
+    ::highlight(hl-yellow) { background-color: #fde047; color: inherit; }
+    ::highlight(hl-green)  { background-color: #86efac; color: inherit; }
+    ::highlight(hl-blue)   { background-color: #93c5fd; color: inherit; }
+  `;
+  document.head.appendChild(el);
+}
 
 const supported = () =>
   typeof CSS !== 'undefined' &&
@@ -38,6 +53,7 @@ function rangeFromOffsets(root: HTMLElement, start: number, end: number): Range 
 
 export function paintHighlights() {
   if (!supported()) return;
+  ensureStyles();
   const registry = (CSS as unknown as { highlights: Map<string, unknown> }).highlights;
   const H = (window as unknown as { Highlight: HighlightCtor }).Highlight;
 
