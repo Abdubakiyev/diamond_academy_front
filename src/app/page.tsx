@@ -36,18 +36,36 @@ import {
    (dh-keyframes.css faylidagi blok).
    ============================================================================ */
 
-/* ───────────── Token (sizdagi useHasToken bilan bir xil mantiq) ───────────── */
+/* ───────────── Auth: token + role (localStorage) ─────────────
+   token yo'q -> /register
+   ADMIN      -> /diamond-academy/admin
+   USER       -> /home                                          */
+type Role = "ADMIN" | "USER";
+
 const subscribe = (cb: () => void) => {
   window.addEventListener("storage", cb);
   return () => window.removeEventListener("storage", cb);
 };
-function useHasToken(): boolean | null {
-  return useSyncExternalStore(
-    subscribe,
-    () => !!localStorage.getItem("access_token"),
-    () => null,
-  );
+
+// Token yo'q bo'lsa null qaytadi
+function getRole(): Role | null {
+  const token = localStorage.getItem("access_token");
+  if (!token) return null;
+  // "ADMIN", "admin", '"ADMIN"' ko'rinishlarining hammasini qabul qiladi
+  const role = (localStorage.getItem("role") ?? "").toUpperCase();
+  return role.includes("ADMIN") ? "ADMIN" : "USER";
 }
+
+function useAuthRole(): Role | null {
+  return useSyncExternalStore<Role | null>(subscribe, getRole, () => null);
+}
+
+const REGISTER_CTA = { href: "/register", text: "Ro‘yxatdan o‘tish" };
+
+const CTA: Record<Role, { href: string; text: string }> = {
+  ADMIN: { href: "/diamond-academy/admin", text: "Admin panelga o‘tish" },
+  USER: { href: "/home", text: "Testlarni boshlash" },
+};
 
 /* ───────────── Reklamalar (Advertisement) ─────────────
    MUHIM: endpoint manzilini o'zingizning backend yo'lingizga moslang.
@@ -375,14 +393,13 @@ function AdSlider({ ads }: { ads: Ad[] }) {
 
 /* ───────────── Sahifa ───────────── */
 export default function LandingPage() {
-  const hasToken = useHasToken();
+  const dest = useAuthDest();
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState(false);
   const [ads, setAds] = useState<Ad[]>([]);
 
-  // Kirgan foydalanuvchi -> /home (test darajalari), kirmagan -> /register
-  const ctaHref = hasToken ? "/home" : "/register";
-  const ctaText = hasToken ? "Testlarni boshlash" : "Ro‘yxatdan o‘tish";
+  // admin -> /diamond-academy/admin, user -> /home, kirmagan -> /register
+  const { href: ctaHref, text: ctaText } = CTA[dest ?? "guest"];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
