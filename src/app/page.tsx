@@ -52,7 +52,7 @@ function getRole(): Role | null {
   const token = localStorage.getItem("access_token");
   if (!token) return null;
   // "ADMIN", "admin", '"ADMIN"' ko'rinishlarining hammasini qabul qiladi
-  const role = (localStorage.getItem("role") ?? "").toUpperCase();
+  const role = (localStorage.getItem("user_role") ?? "").toUpperCase();
   return role.includes("ADMIN") ? "ADMIN" : "USER";
 }
 
